@@ -244,62 +244,72 @@ function TimelineSection({ keyDates, clauses }: { keyDates: KeyDate[]; clauses: 
   if (!all.length) return null;
 
   const now = Date.now();
+  // If 80%+ of dates are in the past, treat this as a historical document
+  const pastCount    = all.filter((d) => new Date(d.date).getTime() < now).length;
+  const isHistorical = pastCount / all.length >= 0.8;
 
   return (
     <Section icon={Clock} title="Timeline" count={all.length} color="#0072E5">
+      {isHistorical && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-xs text-[var(--fg-muted)] mb-1">
+          <Calendar size={11} />
+          Historical document — dates shown reflect the original contract terms
+        </div>
+      )}
       <div className="relative">
-        {/* Vertical line */}
         <div className="absolute left-[19px] top-0 bottom-0 w-px bg-[var(--border-subtle)]" />
 
         <div className="space-y-3 pl-0">
           {all.map((d, i) => {
-            const ts     = new Date(d.date).getTime();
-            const isPast = ts < now;
-            const isNear = !isPast && ts - now < 7 * 86400000;
-            const s      = DATE_TYPE_STYLE[d.type];
+            const ts      = new Date(d.date).getTime();
+            const isPast  = ts < now;
+            const isNear  = !isPast && ts - now < 7 * 86400000;
+            const s       = DATE_TYPE_STYLE[d.type];
+            // Historical mode: show all as completed steps, not greyed-out
+            const showActive = isHistorical || !isPast;
 
             return (
               <div key={i} className="flex items-start gap-4">
-                {/* Dot */}
-                <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-full border-2 bg-[var(--surface-base)]"
+                <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-full border-2"
                   style={{
-                    borderColor: isPast ? "var(--border-subtle)" : s.border,
-                    backgroundColor: isPast ? "var(--surface-subtle)" : s.bg,
+                    borderColor:     showActive ? s.border : "var(--border-subtle)",
+                    backgroundColor: showActive ? s.bg    : "var(--surface-subtle)",
                   }}>
-                  {isPast
+                  {isPast && !isHistorical
                     ? <CheckCircle2 size={14} className="text-[var(--fg-muted)]" />
+                    : isPast && isHistorical
+                    ? <CheckCircle2 size={14} style={{ color: s.color }} />
                     : <Circle size={14} style={{ color: s.color }} />
                   }
                 </div>
 
-                {/* Content */}
                 <div className={`flex-1 min-w-0 rounded-xl border p-3 -mt-0.5 ${isNear ? "shadow-sm" : ""}`}
                   style={{
-                    borderColor: isPast ? "var(--border-subtle)" : s.border,
-                    backgroundColor: isPast ? "transparent" : s.bg,
+                    borderColor:     showActive ? s.border : "var(--border-subtle)",
+                    backgroundColor: showActive ? s.bg    : "transparent",
                   }}>
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
-                          style={{ color: isPast ? "var(--fg-muted)" : s.color, borderColor: isPast ? "var(--border-subtle)" : s.border, backgroundColor: isPast ? "transparent" : s.bg }}>
+                          style={{ color: s.color, borderColor: s.border, backgroundColor: s.bg }}>
                           {s.label}
                         </span>
                         {isNear && (
                           <span className="text-[9px] font-bold font-mono uppercase text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 px-1.5 py-0.5 rounded">
-                            Soon
+                            Upcoming
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm font-medium ${isPast ? "text-[var(--fg-muted)] line-through decoration-[var(--border-subtle)]" : "text-[var(--fg-primary)]"}`}>
-                        {d.event}
-                      </p>
+                      <p className="text-sm font-medium text-[var(--fg-primary)]">{d.event}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs font-mono text-[var(--fg-secondary)]">{fmtDate(d.date)}</p>
-                      <p className={`text-[10px] font-mono mt-0.5 ${isPast ? "text-[var(--fg-muted)]" : isNear ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-[var(--fg-muted)]"}`}>
-                        {daysFrom(d.date)}
-                      </p>
+                      <p className="text-xs font-mono text-[var(--fg-secondary)] font-semibold">{fmtDate(d.date)}</p>
+                      {!isHistorical && (
+                        <p className={`text-[10px] font-mono mt-0.5 ${isPast ? "text-[var(--fg-muted)]" : isNear ? "text-amber-600 font-semibold" : "text-[var(--fg-muted)]"}`}>
+                          {daysFrom(d.date)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -591,17 +601,28 @@ export default function ContractReportPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-2 border-[#0072E5]/20" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <div className="relative w-20 h-20">
+          <div className="absolute inset-0 rounded-full border-2 border-[#0072E5]/15" />
           <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#0072E5] animate-spin" />
-          <div className="absolute inset-3 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(0,114,229,0.1)" }}>
-            <Activity size={16} style={{ color: "#0072E5" }} />
+          <div className="absolute inset-1 rounded-full border border-[#8b5cf6]/20 border-t-transparent animate-spin" style={{ animationDuration: "2.4s", animationDirection: "reverse" }} />
+          <div className="absolute inset-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(0,114,229,0.1)" }}>
+            <Activity size={18} style={{ color: "#0072E5" }} />
           </div>
         </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-[var(--fg-primary)]">Generating report…</p>
-          <p className="text-xs text-[var(--fg-muted)] mt-1">AI is analysing your contract</p>
+        <div className="text-center max-w-xs">
+          <p className="text-sm font-semibold text-[var(--fg-primary)]">Building your report…</p>
+          <p className="text-xs text-[var(--fg-muted)] mt-1.5 leading-relaxed">
+            GPT-4o is reading all extracted clauses and deriving phases, WBS, resources, timelines, and integrations.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-4 text-[10px] font-mono text-[var(--fg-muted)]">
+            {["Phases", "WBS", "Timeline", "Resources"].map((s, i) => (
+              <span key={s} className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#0072E5", animationDelay: `${i * 0.3}s` }} />
+                {s}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -681,7 +702,7 @@ export default function ContractReportPage() {
                 {[
                   { label: "Contract Value", value: contract.contractValue ? formatCurrency(contract.contractValue) : "—" },
                   { label: "Clauses",        value: `${clauses.length} extracted` },
-                  { label: "Expires",        value: contract.expiryDate ? fmtDate(contract.expiryDate) : "—" },
+                  { label: "Contract Period",value: reportData.contractPeriod ?? (contract.expiryDate ? `Until ${fmtDate(contract.expiryDate)}` : "—") },
                   { label: "Report Date",    value: today },
                 ].map(({ label, value }) => (
                   <div key={label}>
@@ -699,12 +720,20 @@ export default function ContractReportPage() {
                 <p className="text-sm text-[var(--fg-secondary)] leading-relaxed max-w-3xl">
                   {reportData.projectSummary || contract.aiSummary}
                 </p>
-                {reportData.estimatedDuration && (
-                  <div className="flex items-center gap-1.5 mt-3 text-xs text-[var(--fg-muted)]">
-                    <Clock size={11} />
-                    <span>Estimated duration: <span className="font-semibold text-[var(--fg-secondary)]">{reportData.estimatedDuration}</span></span>
-                  </div>
-                )}
+                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                  {reportData.estimatedDuration && (
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)]">
+                      <Clock size={11} />
+                      <span>Duration: <span className="font-semibold text-[var(--fg-secondary)]">{reportData.estimatedDuration}</span></span>
+                    </div>
+                  )}
+                  {reportData.contractPeriod && (
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)]">
+                      <Calendar size={11} />
+                      <span>Period: <span className="font-semibold text-[var(--fg-secondary)]">{reportData.contractPeriod}</span></span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
