@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopNav user={user} pendingAlertCount={pendingAlertCount} />
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
               {children}
             </div>
           </main>

@@ -103,7 +103,7 @@ export function PortfolioChart({ contracts }: { contracts: Contract[] }) {
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Portfolio Value</p>
-          <p className="text-3xl font-bold font-mono mt-1 tracking-tight" style={{ color: C.brand }}>
+          <p className="text-2xl sm:text-3xl font-bold font-mono mt-1 tracking-tight" style={{ color: C.brand }}>
             {formatCurrency(currentValue)}
           </p>
           <p className="text-xs text-[var(--fg-muted)] mt-0.5">Cumulative — last 6 months</p>

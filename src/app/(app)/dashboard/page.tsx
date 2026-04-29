@@ -71,7 +71,7 @@ function StatCard({
           <Icon size={14} />
         </div>
       </div>
-      <p className={`text-2xl font-bold font-mono tracking-tight ${textColor}`}>{value}</p>
+      <p className={`text-lg sm:text-2xl font-bold font-mono tracking-tight ${textColor}`}>{value}</p>
       {sub && <p className="text-xs text-[var(--fg-muted)] mt-1">{sub}</p>}
     </div>
   );

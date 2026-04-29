@@ -214,16 +214,17 @@ export default async function ContractDetailPage({
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Back button + breadcrumb row */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 min-w-0 overflow-hidden">
         <Link
           href="/contracts"
-          className="inline-flex items-center gap-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors shrink-0"
         >
           <ArrowLeft size={13} />
-          Back to Contracts
+          <span className="hidden sm:inline">Back to Contracts</span>
+          <span className="sm:hidden">Back</span>
         </Link>
-        <span className="text-[var(--fg-muted)] text-xs">/</span>
-        <span className="text-xs text-[var(--fg-secondary)] font-mono truncate max-w-xs">
+        <span className="text-[var(--fg-muted)] text-xs shrink-0">/</span>
+        <span className="text-xs text-[var(--fg-secondary)] font-mono truncate min-w-0">
           {contract.title}
         </span>
       </div>
@@ -264,7 +265,7 @@ export default async function ContractDetailPage({
           )}
 
           <div className="flex flex-col items-end gap-2 shrink-0 sm:self-start">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <ContractEditModal
                 contractId={id}
                 initial={{
@@ -285,7 +286,7 @@ export default async function ContractDetailPage({
       </div>
 
       {/* Stats row — primary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Contract Value",
@@ -325,13 +326,13 @@ export default async function ContractDetailPage({
               <Icon size={12} className="text-[var(--fg-muted)]" />
               <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
-            <p className={`text-2xl font-bold font-mono ${textColor}`}>{value}</p>
+            <p className={`text-lg sm:text-2xl font-bold font-mono ${textColor}`}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* Stats row — secondary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Medium-Risk",
@@ -377,7 +378,7 @@ export default async function ContractDetailPage({
               <Icon size={12} className="text-[var(--fg-muted)]" />
               <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
-            <p className={`text-xl font-bold font-mono ${textColor}`}>{value}</p>
+            <p className={`text-base sm:text-xl font-bold font-mono ${textColor}`}>{value}</p>
             {sub && <p className="text-[10px] text-[var(--fg-muted)] mt-1">{sub}</p>}
           </div>
         ))}
