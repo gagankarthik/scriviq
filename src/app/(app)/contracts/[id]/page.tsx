@@ -4,12 +4,14 @@ import {
   ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2,
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
 } from "lucide-react";
-import { dbGetContract, dbListClauses, dbListAlerts } from "@/lib/aws/contracts";
+import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
-import { formatCurrency, daysUntil } from "@/lib/utils";
+import { formatCurrency, daysUntil, computeRiskScore } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
-import { RiskGauge, computeRiskScore } from "@/components/domain/RiskGauge";
+import { RiskGauge } from "@/components/domain/RiskGauge";
 import { ClauseList } from "@/components/domain/ClauseList";
+import { ContractActions } from "@/components/domain/ContractActions";
+import { AmendmentPanel } from "@/components/domain/AmendmentPanel";
 import type { Clause } from "@/lib/mock-data";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -189,9 +191,10 @@ export default async function ContractDetailPage({
   const dbContract = await dbGetContract(workspace, id).catch(() => null);
   if (!dbContract) notFound();
 
-  const [clauses, allAlerts] = await Promise.all([
+  const [clauses, allAlerts, amendments] = await Promise.all([
     dbListClauses(workspace, id).catch(() => []),
     dbListAlerts(workspace).catch(() => []),
+    dbListAmendments(workspace, id).catch(() => []),
   ]);
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
@@ -247,18 +250,21 @@ export default async function ContractDetailPage({
             </div>
           )}
 
-          <div className="flex gap-2 shrink-0 sm:self-start">
-            <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-all">
-              <Download size={14} />
-              Download
-            </button>
-            <Link
-              href="/contracts"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-muted)] hover:text-[var(--fg-primary)] text-sm transition-all"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </Link>
+          <div className="flex flex-col items-end gap-2 shrink-0 sm:self-start">
+            <div className="flex items-center gap-2">
+              <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-all">
+                <Download size={14} />
+                Download
+              </button>
+              <ContractActions contractId={id} contractTitle={contract.title} />
+              <Link
+                href="/contracts"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-muted)] hover:text-[var(--fg-primary)] text-sm transition-all"
+              >
+                <ArrowLeft size={14} />
+                Back
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -308,6 +314,27 @@ export default async function ContractDetailPage({
           </div>
         ))}
       </div>
+
+      {/* Pending amendment alert */}
+      {amendments.some((a) => a.status === "pending_review") && (
+        <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-950/15">
+          <AlertCircle size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              {amendments.filter((a) => a.status === "pending_review").length} amendment{amendments.filter((a) => a.status === "pending_review").length !== 1 ? "s" : ""} pending review
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Review clause-by-clause changes before applying to this contract.
+            </p>
+          </div>
+          <a
+            href="#amendments"
+            className="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+          >
+            Review now →
+          </a>
+        </div>
+      )}
 
       {/* Payment milestones (full width) */}
       {contract.status === "ready" && clauses.length > 0 && (
@@ -421,6 +448,9 @@ export default async function ContractDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Amendments */}
+      <AmendmentPanel contractId={id} initialAmendments={amendments} />
     </div>
   );
 }

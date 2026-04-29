@@ -85,3 +85,29 @@ export interface ActivityEvent {
   contractId?: string;
   timestamp: string;
 }
+
+export type AmendmentStatus    = "pending_review" | "resolved";
+export type ClauseChangeType   = "added" | "modified" | "removed";
+export type ClauseChangeStatus = "pending" | "accepted" | "rejected";
+
+export interface ClauseChange {
+  id:           string;
+  changeType:   ClauseChangeType;
+  clauseId:     string | null;    // null for newly added clauses
+  title:        string;
+  originalText: string | null;    // null when changeType === "added"
+  newText:      string | null;    // null when changeType === "removed"
+  riskLevel:    RiskLevel;
+  riskReason:   string | null;
+  status:       ClauseChangeStatus;
+}
+
+export interface Amendment {
+  id:          string;
+  contractId:  string;
+  title:       string;
+  description: string;
+  status:      AmendmentStatus;
+  uploadedAt:  string;
+  changes:     ClauseChange[];
+}

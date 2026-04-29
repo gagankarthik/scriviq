@@ -6,7 +6,7 @@ import {
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { dynamo, TABLE } from "./dynamodb";
-import type { Contract, Clause, Alert, ActivityEvent } from "@/lib/mock-data";
+import type { Contract, Clause, Alert, ActivityEvent, Amendment } from "@/lib/mock-data";
 
 // ── Key helpers ───────────────────────────────────────────────────────────────
 
@@ -231,6 +231,59 @@ export async function dbPutActivity(
     new PutCommand({
       TableName: TABLE,
       Item: { ...event, PK: workspace, SK: `ACTIVITY#${event.timestamp}#${event.id}` },
+    })
+  );
+}
+
+// ── Amendments ────────────────────────────────────────────────────────────────
+
+export async function dbListAmendments(
+  workspace: string,
+  contractId: string
+): Promise<Amendment[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: {
+        ":pk":     clausePK(workspace, contractId),
+        ":prefix": "AMENDMENT#",
+      },
+      ScanIndexForward: false,
+    })
+  );
+  return (result.Items ?? []) as Amendment[];
+}
+
+export async function dbGetAmendment(
+  workspace: string,
+  contractId: string,
+  amendmentId: string
+): Promise<Amendment | null> {
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: TABLE,
+      Key: {
+        PK: clausePK(workspace, contractId),
+        SK: `AMENDMENT#${amendmentId}`,
+      },
+    })
+  );
+  return (result.Item as Amendment) ?? null;
+}
+
+export async function dbPutAmendment(
+  workspace: string,
+  amendment: Amendment
+): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: {
+        ...amendment,
+        PK: clausePK(workspace, amendment.contractId),
+        SK: `AMENDMENT#${amendment.id}`,
+      },
     })
   );
 }

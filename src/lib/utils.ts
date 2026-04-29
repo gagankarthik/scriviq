@@ -23,3 +23,11 @@ export function relativeTime(isoDate: string): string {
 export function clauseTypeLabel(type: string): string {
   return type.replace(/_/g, " ");
 }
+
+export function computeRiskScore(clauses: { riskLevel: string }[]): number {
+  if (!clauses.length) return 0;
+  const h = clauses.filter((c) => c.riskLevel === "high").length;
+  const m = clauses.filter((c) => c.riskLevel === "medium").length;
+  const l = clauses.filter((c) => c.riskLevel === "low").length;
+  return Math.min(100, Math.round((h * 100 + m * 45 + l * 10) / clauses.length));
+}
