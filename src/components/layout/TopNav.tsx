@@ -124,8 +124,8 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
         <div className="relative ml-1">
           <button
             onClick={() => setShowUserMenu((v) => !v)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors"
-            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)", color: "#75D8FC" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors text-[#0072E5] dark:text-[#75D8FC]"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)" }}
             aria-label="User menu"
           >
             {initials}

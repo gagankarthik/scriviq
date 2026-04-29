@@ -48,17 +48,17 @@
   --border-subtle:    rgba(148, 163, 184, 0.08);
 }
 
-/* ── Light theme ────────────────────────────────────────────────────────── */
+/* ── Light theme — Warm Editorial ───────────────────────────────────────── */
 :root.light {
-  --surface-base:     #f8fafc;
-  --surface-elevated: #ffffff;
-  --surface-subtle:   #f1f5f9;
-  --surface-overlay:  rgba(248, 250, 252, 0.95);
-  --fg-primary:       #0f172a;
-  --fg-secondary:     #475569;
-  --fg-muted:         #94a3b8;
-  --border-color:     rgba(15, 23, 42, 0.1);
-  --border-subtle:    rgba(15, 23, 42, 0.06);
+  --surface-base:     #F8F6F1;
+  --surface-elevated: #FFFFFF;
+  --surface-subtle:   #EFECEA;
+  --surface-overlay:  rgba(248,246,241,0.95);
+  --fg-primary:       #131210;
+  --fg-secondary:     #58564F;
+  --fg-muted:         #A09C92;
+  --border-color:     rgba(19,18,16,0.09);
+  --border-subtle:    rgba(19,18,16,0.06);
 }
 
 html { scroll-behavior: smooth; }

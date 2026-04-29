@@ -8,7 +8,7 @@ type Size = "sm" | "md" | "lg";
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-indigo-600 hover:bg-indigo-500 text-white",
+    "bg-[#0072E5] hover:bg-[#0058b3] text-white",
   ghost:
     "border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:border-[var(--border-color)] bg-transparent",
   secondary:
@@ -54,7 +54,7 @@ export function Button({
 
   const glowStyle =
     glow && variant === "primary"
-      ? { boxShadow: "0 0 20px rgb(79 70 229 / 0.3)" }
+      ? { boxShadow: "0 0 20px rgba(0,114,229,0.35)" }
       : undefined;
 
   const content = loading ? (

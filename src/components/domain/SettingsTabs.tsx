@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/Button";
 
 type Tab = "profile" | "notifications" | "billing";
 
+export interface SettingsUser {
+  name:  string;
+  email: string;
+}
+
 function Toggle({
   label, sub, checked, onChange,
 }: {
@@ -22,22 +27,26 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-          checked ? "bg-indigo-600" : "bg-slate-300 dark:bg-slate-700/60"
-        }`}
+        className="relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0072E5]/30"
+        style={{ backgroundColor: checked ? "#0072E5" : undefined }}
+        data-unchecked={!checked || undefined}
       >
-        <span className={`inline-block w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-200 mt-1 ${checked ? "translate-x-5" : "translate-x-1"}`} />
+        <span
+          className="absolute inset-0 rounded-full transition-colors duration-200"
+          style={{ backgroundColor: checked ? "#0072E5" : "rgb(148 163 184 / 0.3)" }}
+        />
+        <span className={`relative inline-block w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-200 mt-1 z-10 ${checked ? "translate-x-5" : "translate-x-1"}`} />
       </button>
     </div>
   );
 }
 
-function ProfilePanel() {
+function ProfilePanel({ user }: { user: SettingsUser }) {
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [form,   setForm]   = useState({
-    name:     "Gagan Karthik",
-    email:    "gagan@scriviq.com",
+    name:     user.name,
+    email:    user.email,
     company:  "scriviq",
     timezone: "UTC+5:30",
   });
@@ -57,9 +66,9 @@ function ProfilePanel() {
 
   return (
     <form onSubmit={save} className="space-y-4 max-w-lg">
-      <Input label="Full name"       id="name"    value={form.name}     onChange={field("name")} />
-      <Input label="Email address"   id="email"   type="email" value={form.email}  onChange={field("email")} />
-      <Input label="Company / Agency" id="company" value={form.company} onChange={field("company")} />
+      <Input label="Full name"        id="name"    value={form.name}     onChange={field("name")} />
+      <Input label="Email address"    id="email"   type="email" value={form.email}  onChange={field("email")} />
+      <Input label="Company / Agency" id="company" value={form.company}  onChange={field("company")} />
       <Select
         label="Timezone"
         id="timezone"
@@ -111,11 +120,11 @@ function NotificationsPanel() {
 
       <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] px-5 divide-y divide-[var(--border-subtle)]">
         <div className="py-3">
-          <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Digest & Integrations</p>
+          <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Digest &amp; Integrations</p>
         </div>
-        <Toggle label="Weekly digest"      sub="Summary of all upcoming deadlines every Monday"            checked={settings.weeklyDigest} onChange={toggle("weeklyDigest")} />
-        <Toggle label="Team activity"      sub="Notify when teammates upload or action clauses"            checked={settings.teamActivity} onChange={toggle("teamActivity")} />
-        <Toggle label="Slack integration"  sub="Post critical alerts to a Slack channel via webhook"      checked={settings.slackWebhook} onChange={toggle("slackWebhook")} />
+        <Toggle label="Weekly digest"     sub="Summary of all upcoming deadlines every Monday"           checked={settings.weeklyDigest} onChange={toggle("weeklyDigest")} />
+        <Toggle label="Team activity"     sub="Notify when teammates upload or action clauses"           checked={settings.teamActivity} onChange={toggle("teamActivity")} />
+        <Toggle label="Slack integration" sub="Post critical alerts to a Slack channel via webhook"     checked={settings.slackWebhook} onChange={toggle("slackWebhook")} />
       </div>
 
       {settings.slackWebhook && (
@@ -133,10 +142,13 @@ function NotificationsPanel() {
 function BillingPanel() {
   return (
     <div className="max-w-lg space-y-4">
-      <div className="rounded-2xl border border-indigo-200 dark:border-indigo-800/25 bg-indigo-50 dark:bg-indigo-950/20 p-5">
+      <div
+        className="rounded-2xl p-5"
+        style={{ border: "1px solid rgba(0,114,229,0.2)", background: "rgba(0,114,229,0.05)" }}
+      >
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-xs font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">Pro Team</p>
+            <p className="text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "#0072E5" }}>Pro Team</p>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-bold text-[var(--fg-primary)] font-mono">$49</span>
               <span className="text-[var(--fg-muted)] text-sm">/ month</span>
@@ -148,10 +160,13 @@ function BillingPanel() {
             Add payment method
           </Button>
         </div>
-        <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-800/20 grid grid-cols-2 gap-3 text-xs">
+        <div
+          className="mt-4 pt-4 grid grid-cols-2 gap-3 text-xs"
+          style={{ borderTop: "1px solid rgba(0,114,229,0.15)" }}
+        >
           {["Unlimited contracts", "AI clause extraction", "Deadline alerts", "Team workspace", "Audit logs", "Priority support"].map((f) => (
             <div key={f} className="flex items-center gap-1.5 text-[var(--fg-secondary)]">
-              <CheckCircle2 size={12} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <CheckCircle2 size={12} className="shrink-0" style={{ color: "#0072E5" }} />
               {f}
             </div>
           ))}
@@ -178,7 +193,7 @@ function BillingPanel() {
   );
 }
 
-export function SettingsTabs() {
+export function SettingsTabs({ user }: { user: SettingsUser }) {
   const [tab, setTab] = useState<Tab>("profile");
 
   const TABS: { value: Tab; label: string; Icon: React.ElementType }[] = [
@@ -194,11 +209,12 @@ export function SettingsTabs() {
           <button
             key={value}
             onClick={() => setTab(value)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+            style={
               tab === value
-                ? "bg-indigo-600 text-white"
-                : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
-            }`}
+                ? { backgroundColor: "#0072E5", color: "#ffffff" }
+                : { color: "var(--fg-muted)" }
+            }
           >
             <Icon size={13} strokeWidth={1.75} />
             {label}
@@ -206,7 +222,7 @@ export function SettingsTabs() {
         ))}
       </div>
 
-      {tab === "profile"       && <ProfilePanel />}
+      {tab === "profile"       && <ProfilePanel user={user} />}
       {tab === "notifications" && <NotificationsPanel />}
       {tab === "billing"       && <BillingPanel />}
     </div>

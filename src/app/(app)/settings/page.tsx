@@ -1,6 +1,13 @@
+import { getSession } from "@/lib/auth/session";
 import { SettingsTabs } from "@/components/domain/SettingsTabs";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await getSession();
+  const user = {
+    name:  session?.name  ?? "User",
+    email: session?.email ?? "",
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -9,7 +16,7 @@ export default function SettingsPage() {
           Manage your profile, notifications, and billing.
         </p>
       </div>
-      <SettingsTabs />
+      <SettingsTabs user={user} />
     </div>
   );
 }

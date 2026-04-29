@@ -3,7 +3,7 @@
 import { type InputHTMLAttributes, type SelectHTMLAttributes, type ReactNode, forwardRef } from "react";
 
 const baseInput =
-  "w-full rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-color)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40";
+  "w-full rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-color)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:border-[#0072E5] focus:ring-1 focus:ring-[#0072E5]/30";
 
 interface LabelProps {
   children: ReactNode;

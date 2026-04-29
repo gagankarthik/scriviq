@@ -47,18 +47,15 @@ function SidebarContent({
   return (
     <div className="flex flex-col h-full bg-[var(--surface-base)] border-r border-[var(--border-subtle)]">
       {/* Logo */}
-      <div className="px-5 pt-5 pb-4 border-b border-[var(--border-subtle)]">
+      <div className="flex items-center px-6 h-16 border-b border-[var(--border-subtle)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Image
-            src="/logo-icon.svg"
+            src="/logo.svg"
             alt="scriviq"
-            width={30}
+            width={130}
             height={30}
             className="shrink-0"
           />
-          <span className="text-[var(--fg-primary)] font-bold tracking-tight text-[15px]">
-            scriviq
-          </span>
         </Link>
       </div>
 
@@ -74,7 +71,7 @@ function SidebarContent({
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
-                  ? "border border-[rgba(0,114,229,0.2)] text-[#75D8FC]"
+                  ? "border border-[rgba(0,114,229,0.2)] text-[#0072E5] dark:text-[#75D8FC]"
                   : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)] border border-transparent"
               }`}
               style={active ? { backgroundColor: "rgba(0,114,229,0.12)" } : {}}
@@ -109,8 +106,8 @@ function SidebarContent({
       <div className="px-4 py-4 border-t border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
-            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)", color: "#75D8FC" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 text-[#0072E5] dark:text-[#75D8FC]"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)" }}
           >
             {initials}
           </div>
