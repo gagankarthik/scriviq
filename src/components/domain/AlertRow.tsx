@@ -72,7 +72,7 @@ export function AlertRow({ alert, onDismiss, onAction }: AlertRowProps) {
         </p>
         <Link
           href={`/contracts/${alert.contractId}`}
-          className="text-xs text-[var(--fg-muted)] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate block"
+          className="text-xs text-[var(--fg-muted)] hover:text-[#75D8FC] transition-colors truncate block"
         >
           {alert.contractTitle} · {alert.clientName}
         </Link>
@@ -93,7 +93,10 @@ export function AlertRow({ alert, onDismiss, onAction }: AlertRowProps) {
           {onAction && (
             <button
               onClick={() => onAction(alert.id)}
-              className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+              className="text-xs font-medium px-2 py-1 rounded-lg transition-colors"
+              style={{ color: "#0072E5" }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(0,114,229,0.08)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ""; }}
             >
               Action
             </button>

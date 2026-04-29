@@ -63,11 +63,8 @@ export function ClauseList({ clauses }: ClauseListProps) {
               <button
                 key={t.value}
                 onClick={() => setStatusFilter(t.value)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${
-                  statusFilter === t.value
-                    ? "bg-indigo-600 text-white"
-                    : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
-                }`}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                style={statusFilter === t.value ? { backgroundColor: "#0072E5", color: "#fff" } : {}}
               >
                 {t.label}
               </button>
@@ -79,11 +76,8 @@ export function ClauseList({ clauses }: ClauseListProps) {
               <button
                 key={t.value}
                 onClick={() => setRiskFilter(t.value)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${
-                  riskFilter === t.value
-                    ? "bg-indigo-600 text-white"
-                    : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
-                }`}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                style={riskFilter === t.value ? { backgroundColor: "#0072E5", color: "#fff" } : {}}
               >
                 {t.label}
               </button>

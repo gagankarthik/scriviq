@@ -33,7 +33,8 @@ export function AlertsWidget({ alerts: initialAlerts }: AlertsWidgetProps) {
         </div>
         <Link
           href="/alerts"
-          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="text-xs hover:underline"
+          style={{ color: "#0072E5" }}
         >
           View all →
         </Link>

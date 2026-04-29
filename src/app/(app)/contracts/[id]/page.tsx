@@ -16,7 +16,10 @@ import { ClauseList } from "@/components/domain/ClauseList";
 function StatusBadge({ status }: { status: "processing" | "ready" | "error" }) {
   if (status === "processing")
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border"
+        style={{ backgroundColor: "rgba(0,114,229,0.08)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.2)" }}
+      >
         <Loader2 size={11} className="animate-spin" />
         Processing
       </span>
@@ -158,8 +161,8 @@ export default async function ContractDetailPage({
             Icon: Calendar,
           },
         ].map(({ label, value, accent, Icon }) => {
-          const leftBorder = accent === "indigo" ? "border-l-indigo-500" : accent === "red" ? "border-l-red-500" : accent === "amber" ? "border-l-amber-500" : "border-l-[var(--border-color)]";
-          const textColor  = accent === "indigo" ? "text-indigo-600 dark:text-indigo-400" : accent === "red" ? "text-red-600 dark:text-red-400" : accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]";
+          const leftBorder = accent === "indigo" ? "border-l-[#0072E5]" : accent === "red" ? "border-l-red-500" : accent === "amber" ? "border-l-amber-500" : "border-l-[var(--border-color)]";
+          const textColor  = accent === "indigo" ? "text-[#0072E5] dark:text-[#75D8FC]" : accent === "red" ? "text-red-600 dark:text-red-400" : accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]";
           return (
             <div key={label} className={`rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2 ${leftBorder}`}>
               <div className="flex items-center gap-1.5 mb-2">
@@ -180,7 +183,7 @@ export default async function ContractDetailPage({
             <ClauseList clauses={clauses} />
           ) : contract.status === "processing" ? (
             <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-12 text-center">
-              <div className="w-12 h-12 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin mx-auto mb-4" />
+              <div className="w-12 h-12 rounded-full border-2 border-[#0072E5] border-t-transparent animate-spin mx-auto mb-4" />
               <p className="text-[var(--fg-primary)] font-semibold mb-1">Extracting clauses…</p>
               <p className="text-sm text-[var(--fg-muted)]">This usually takes about 15 seconds.</p>
             </div>
@@ -191,8 +194,8 @@ export default async function ContractDetailPage({
               <p className="text-sm text-[var(--fg-muted)] mb-4">
                 The AI could not process this document. Check the file and retry.
               </p>
-              <button className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-                Retry extraction →
+              <button className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline">
+                Retry extraction &rarr;
               </button>
             </div>
           ) : null}

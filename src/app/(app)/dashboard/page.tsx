@@ -29,7 +29,7 @@ async function getData(workspace: string) {
     ]);
 
     if (!contracts.length && !pendingAlerts.length) {
-      throw new Error("No data in DynamoDB — using seed data");
+      throw new Error("empty");
     }
 
     return { stats, contracts, activity, pendingAlerts, source: "live" as const };
@@ -53,7 +53,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[var(--fg-primary)] tracking-tight">
@@ -72,10 +71,10 @@ export default async function DashboardPage() {
                 .
               </>
             ) : (
-              <>All caught up — no pending alerts.</>
+              <>All caught up &mdash; no pending alerts.</>
             )}
             {source === "mock" && (
-              <span className="ml-2 text-[10px] font-mono text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
+              <span className="ml-2 text-[10px] font-mono text-[#75D8FC] bg-[rgba(0,114,229,0.08)] px-1.5 py-0.5 rounded">
                 demo data
               </span>
             )}
@@ -83,15 +82,13 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/contracts/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-150 shrink-0 shadow-sm"
-          style={{ boxShadow: "0 0 20px rgb(79 70 229 / 0.2)" }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium shrink-0 btn-brand"
         >
           <Upload size={15} strokeWidth={2} />
           Upload contract
         </Link>
       </div>
 
-      {/* Stats */}
       <StatsBar
         totalValue={stats.totalValue}
         activeContracts={stats.activeContracts}
@@ -99,7 +96,6 @@ export default async function DashboardPage() {
         upcomingDeadlineCount={stats.upcomingDeadlineCount}
       />
 
-      {/* Alerts + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <AlertsWidget alerts={pendingAlerts} />
@@ -109,7 +105,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent contracts */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-[var(--fg-secondary)]">
@@ -117,7 +112,7 @@ export default async function DashboardPage() {
           </h2>
           <Link
             href="/contracts"
-            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+            className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline inline-flex items-center gap-1"
           >
             View all <ArrowRight size={11} />
           </Link>

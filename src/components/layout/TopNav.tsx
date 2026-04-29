@@ -89,7 +89,7 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
         {/* Quick upload */}
         <Link
           href="/contracts/upload"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors btn-brand"
         >
           <Upload size={13} strokeWidth={2} />
           Upload
@@ -124,7 +124,8 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
         <div className="relative ml-1">
           <button
             onClick={() => setShowUserMenu((v) => !v)}
-            className="w-8 h-8 rounded-full bg-indigo-600/10 border border-indigo-500/25 flex items-center justify-center text-indigo-500 dark:text-indigo-400 text-xs font-semibold cursor-pointer hover:bg-indigo-600/15 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)", color: "#75D8FC" }}
             aria-label="User menu"
           >
             {initials}

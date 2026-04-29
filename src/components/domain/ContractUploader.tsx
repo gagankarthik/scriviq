@@ -130,10 +130,10 @@ export function ContractUploader() {
           <p className="text-sm font-semibold text-[var(--fg-secondary)] mb-3">Contract File</p>
           <div
             className={`relative rounded-2xl border-2 border-dashed transition-all duration-200 ${
-              dragging   ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20"
+              dragging   ? "border-[#0072E5] bg-[rgba(0,114,229,0.06)]"
               : fileError ? "border-red-400 dark:border-red-700/60 bg-red-50 dark:bg-red-950/10"
               : file      ? "border-emerald-400 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-950/10"
-              : "border-[var(--border-color)] hover:border-indigo-400 bg-[var(--surface-subtle)]"
+              : "border-[var(--border-color)] hover:border-[rgba(0,114,229,0.5)] bg-[var(--surface-subtle)]"
             }`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
@@ -172,8 +172,11 @@ export function ContractUploader() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 flex items-center justify-center mb-4">
-                  <Upload size={22} className="text-indigo-600 dark:text-indigo-400" />
+                <div
+                  className="w-14 h-14 rounded-2xl border flex items-center justify-center mb-4"
+                  style={{ backgroundColor: "rgba(0,114,229,0.1)", borderColor: "rgba(0,114,229,0.2)" }}
+                >
+                  <Upload size={22} style={{ color: "#0072E5" }} />
                 </div>
                 <p className="text-sm font-semibold text-[var(--fg-primary)] mb-1">
                   Drop your contract here
@@ -182,7 +185,8 @@ export function ContractUploader() {
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
-                  className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: "#0072E5" }}
                 >
                   Browse files
                 </button>
@@ -261,7 +265,10 @@ export function ContractUploader() {
               "Deadline alerts auto-created",
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-2.5 text-xs text-[var(--fg-secondary)]">
-                <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold shrink-0">
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                  style={{ backgroundColor: "rgba(0,114,229,0.12)", color: "#75D8FC" }}
+                >
                   {i + 1}
                 </span>
                 {step}

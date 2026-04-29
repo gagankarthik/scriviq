@@ -17,7 +17,7 @@ export function ClauseRow({ clause, onAction }: ClauseRowProps) {
   const isOverdue = days !== null && days < 0;
 
   return (
-    <div className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:border-indigo-500/20 transition-all duration-150 overflow-hidden">
+    <div className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:border-[rgba(0,114,229,0.25)] transition-all duration-150 overflow-hidden">
       <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3 sm:gap-4">
           {/* Left */}

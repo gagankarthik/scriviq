@@ -3,11 +3,11 @@ import { Upload, CheckCircle2, Bell, FileText, UserPlus, Activity } from "lucide
 import { type ActivityEvent, relativeTime } from "@/lib/mock-data";
 
 const EVENT_CONFIG: Record<ActivityEvent["type"], { Icon: React.ElementType; color: string }> = {
-  contract_uploaded:   { Icon: Upload,       color: "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/40" },
+  contract_uploaded:   { Icon: Upload,       color: "bg-[rgba(0,114,229,0.1)] text-[#75D8FC] border-[rgba(0,114,229,0.2)]" },
   extraction_complete: { Icon: CheckCircle2, color: "bg-emerald-100 dark:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40" },
   alert_sent:          { Icon: Bell,         color: "bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/40" },
   clause_actioned:     { Icon: FileText,     color: "bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/40" },
-  member_added:        { Icon: UserPlus,     color: "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/30" },
+  member_added:        { Icon: UserPlus,     color: "bg-[rgba(0,114,229,0.1)] text-[#75D8FC] border-[rgba(0,114,229,0.2)]" },
 };
 
 interface ActivityFeedProps {
@@ -36,7 +36,7 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
                 {event.contractId ? (
                   <Link
                     href={`/contracts/${event.contractId}`}
-                    className="text-xs text-[var(--fg-secondary)] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors leading-relaxed"
+                    className="text-xs text-[var(--fg-secondary)] hover:text-[#75D8FC] transition-colors leading-relaxed"
                   >
                     {event.description}
                   </Link>

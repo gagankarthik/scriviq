@@ -47,44 +47,39 @@ export default async function ContractsPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-[var(--fg-primary)] tracking-tight">
             Contracts
           </h1>
           <p className="text-sm text-[var(--fg-muted)] mt-1">
-            {total} total · {readyCount} ready
+            {total} total &middot; {readyCount} ready
           </p>
         </div>
         <Link
           href="/contracts/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shrink-0 shadow-sm"
-          style={{ boxShadow: "0 0 20px rgb(79 70 229 / 0.2)" }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium transition-all shrink-0 btn-brand"
         >
           <Upload size={15} strokeWidth={2} />
           Upload contract
         </Link>
       </div>
 
-      {/* Filters */}
       <Suspense>
         <ContractFilters />
       </Suspense>
 
-      {/* Result count */}
       {hasFilters && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-[var(--fg-muted)]">
             {contracts.length} contract{contracts.length !== 1 ? "s" : ""} match your filters
           </p>
-          <Link href="/contracts" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/contracts" className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline">
             Clear filters
           </Link>
         </div>
       )}
 
-      {/* Grid */}
       {contracts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {contracts.map((c) => (
@@ -98,18 +93,16 @@ export default async function ContractsPage({
           </div>
           <p className="text-[var(--fg-primary)] font-semibold mb-1">No contracts found</p>
           <p className="text-sm text-[var(--fg-muted)] mb-5">
-            {hasFilters
-              ? "Try adjusting your filters."
-              : "Upload your first contract to get started."}
+            {hasFilters ? "Try adjusting your filters." : "Upload your first contract to get started."}
           </p>
           {hasFilters ? (
-            <Link href="/contracts" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-              Clear filters →
+            <Link href="/contracts" className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline">
+              Clear filters &rarr;
             </Link>
           ) : (
             <Link
               href="/contracts/upload"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-medium transition-all btn-brand"
             >
               <Upload size={14} />
               Upload contract

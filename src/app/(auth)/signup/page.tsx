@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Zap } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -54,13 +54,8 @@ export default function SignupPage() {
     <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
-        <div
-          className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0"
-          style={{ boxShadow: "0 0 18px rgb(79 70 229 / 0.4)" }}
-        >
-          <Zap size={18} strokeWidth={2.5} />
-        </div>
-        <span className="text-[var(--fg-primary)] font-semibold tracking-tight text-lg">
+        <Image src="/logo-icon.svg" alt="scriviq" width={36} height={36} />
+        <span className="text-[var(--fg-primary)] font-bold tracking-tight text-lg">
           scriviq
         </span>
       </div>
@@ -137,7 +132,7 @@ export default function SignupPage() {
 
       <p className="text-center text-sm text-[var(--fg-muted)] mt-4">
         Already have an account?{" "}
-        <Link href="/login" className="text-indigo-500 hover:underline font-medium">
+        <Link href="/login" className="text-[#0072E5] dark:text-[#75D8FC] hover:underline font-medium">
           Sign in
         </Link>
       </p>

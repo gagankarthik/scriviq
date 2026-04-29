@@ -6,7 +6,10 @@ import { RiskBadge } from "./RiskBadge";
 function StatusPill({ status }: { status: Contract["status"] }) {
   if (status === "processing")
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border"
+        style={{ backgroundColor: "rgba(0,114,229,0.1)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.2)" }}
+      >
         <Loader2 size={9} className="animate-spin" />
         Processing
       </span>
@@ -35,7 +38,8 @@ export function ContractCard({ contract }: { contract: Contract }) {
   return (
     <Link
       href={`/contracts/${contract.id}`}
-      className="block rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:border-indigo-500/30 hover:shadow-lg transition-all duration-200 overflow-hidden group"
+      className="block rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:shadow-lg transition-all duration-200 overflow-hidden group"
+      style={{ ["--tw-hover-border" as string]: "rgba(0,114,229,0.3)" }}
     >
       <div className="p-5">
         {/* Header */}
@@ -44,7 +48,7 @@ export function ContractCard({ contract }: { contract: Contract }) {
             <p className="text-xs text-[var(--fg-muted)] truncate mb-0.5">
               {contract.clientName}
             </p>
-            <h3 className="text-sm font-semibold text-[var(--fg-primary)] truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+            <h3 className="text-sm font-semibold text-[var(--fg-primary)] truncate group-hover:text-[#75D8FC] transition-colors">
               {contract.title}
             </h3>
           </div>
@@ -92,7 +96,7 @@ export function ContractCard({ contract }: { contract: Contract }) {
         {contract.status === "processing" && (
           <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
             <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-              <div className="h-full w-1/2 bg-indigo-500 rounded-full animate-pulse" />
+              <div className="h-full w-1/2 rounded-full animate-pulse" style={{ backgroundColor: "#0072E5" }} />
             </div>
             <p className="text-xs text-[var(--fg-muted)] mt-1.5">
               Extracting clauses with AI…

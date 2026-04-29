@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Zap, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -41,12 +42,7 @@ export default function LoginPage() {
     <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
-        <div
-          className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0"
-          style={{ boxShadow: "0 0 18px rgb(79 70 229 / 0.4)" }}
-        >
-          <Zap size={18} strokeWidth={2.5} />
-        </div>
+        <Image src="/logo-icon.svg" alt="scriviq" width={36} height={36} />
         <span className="text-[var(--fg-primary)] font-bold tracking-tight text-lg">scriviq</span>
       </div>
 
@@ -74,7 +70,7 @@ export default function LoginPage() {
             required
           />
           <div className="flex justify-end mt-1.5">
-            <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+            <a href="#" className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline">
               Forgot password?
             </a>
           </div>
@@ -97,7 +93,7 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-[var(--fg-muted)] mt-6">
         New to scriviq?{" "}
-        <Link href="/signup" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">
+        <Link href="/signup" className="text-[#0072E5] dark:text-[#75D8FC] hover:underline font-semibold">
           Start free trial →
         </Link>
       </p>

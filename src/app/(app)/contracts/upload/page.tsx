@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ContractUploader } from "@/components/domain/ContractUploader";
 import { Brain, ShieldCheck, Bell } from "lucide-react";
 
@@ -28,7 +28,7 @@ export default function UploadPage() {
         <div className="flex items-center gap-2 text-xs text-[var(--fg-muted)] mb-3 font-mono">
           <Link
             href="/contracts"
-            className="hover:text-indigo-500 transition-colors"
+            className="hover:text-[#0072E5] transition-colors"
           >
             Contracts
           </Link>
@@ -39,7 +39,7 @@ export default function UploadPage() {
           Upload Contract
         </h1>
         <p className="text-sm text-[var(--fg-muted)] mt-1">
-          Upload a PDF or DOCX — scriviq extracts every clause in ~15 seconds.
+          Upload a PDF or DOCX â€” scriviq extracts every clause in ~15 seconds.
         </p>
       </div>
 
@@ -58,7 +58,7 @@ export default function UploadPage() {
             <Icon
               size={18}
               strokeWidth={1.75}
-              className="text-indigo-500 shrink-0 mt-0.5"
+              className="text-[#0072E5] shrink-0 mt-0.5"
             />
             <div>
               <p className="text-xs font-semibold text-[var(--fg-primary)]">
@@ -72,3 +72,4 @@ export default function UploadPage() {
     </div>
   );
 }
+

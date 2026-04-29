@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -8,7 +9,6 @@ import {
   Bell,
   Users,
   Settings2,
-  Zap,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 
@@ -49,12 +49,13 @@ function SidebarContent({
       {/* Logo */}
       <div className="px-5 pt-5 pb-4 border-b border-[var(--border-subtle)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0"
-            style={{ boxShadow: "0 0 14px rgb(79 70 229 / 0.45)" }}
-          >
-            <Zap size={16} strokeWidth={2.5} />
-          </div>
+          <Image
+            src="/logo-icon.svg"
+            alt="scriviq"
+            width={30}
+            height={30}
+            className="shrink-0"
+          />
           <span className="text-[var(--fg-primary)] font-bold tracking-tight text-[15px]">
             scriviq
           </span>
@@ -73,9 +74,10 @@ function SidebarContent({
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
-                  ? "bg-indigo-600/15 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20"
+                  ? "border border-[rgba(0,114,229,0.2)] text-[#75D8FC]"
                   : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)] border border-transparent"
               }`}
+              style={active ? { backgroundColor: "rgba(0,114,229,0.12)" } : {}}
             >
               <Icon size={16} strokeWidth={1.75} className="shrink-0" />
               {label}
@@ -93,8 +95,11 @@ function SidebarContent({
           <p className="text-xs font-medium text-[var(--fg-secondary)] truncate">
             scriviq Agency
           </p>
-          <span className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-indigo-600/15 text-indigo-400 dark:text-indigo-300 border border-indigo-500/25">
-            <span className="w-1 h-1 rounded-full bg-indigo-500" />
+          <span
+            className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full border"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.25)" }}
+          >
+            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#0072E5" }} />
             Pro Plan
           </span>
         </div>
@@ -103,7 +108,10 @@ function SidebarContent({
       {/* User */}
       <div className="px-4 py-4 border-t border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-600/10 border border-indigo-500/25 flex items-center justify-center text-indigo-500 dark:text-indigo-400 text-xs font-semibold shrink-0">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "1px solid rgba(0,114,229,0.25)", color: "#75D8FC" }}
+          >
             {initials}
           </div>
           <div className="flex-1 min-w-0">

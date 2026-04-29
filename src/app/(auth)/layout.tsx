@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none opacity-20 dark:opacity-20"
         style={{
-          background: "radial-gradient(ellipse at 50% 0%, #4F46E5 0%, transparent 65%)",
+          background: "radial-gradient(ellipse at 50% 0%, #0072E5 0%, transparent 65%)",
           filter: "blur(80px)",
         }}
       />
