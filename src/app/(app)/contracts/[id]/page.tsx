@@ -1,46 +1,190 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2, Calendar, DollarSign, Shield } from "lucide-react";
+import {
+  ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2,
+  Calendar, DollarSign, Shield, TrendingUp, FileWarning,
+} from "lucide-react";
 import { dbGetContract, dbListClauses, dbListAlerts } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { formatCurrency, daysUntil } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
+import { RiskGauge, computeRiskScore } from "@/components/domain/RiskGauge";
 import { ClauseList } from "@/components/domain/ClauseList";
+import type { Clause } from "@/lib/mock-data";
+
+// ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: "processing" | "ready" | "error" }) {
   if (status === "processing")
     return (
-      <span
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border"
-        style={{ backgroundColor: "rgba(0,114,229,0.08)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.2)" }}
-      >
-        <Loader2 size={11} className="animate-spin" />
-        Processing
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border"
+        style={{ backgroundColor: "rgba(0,114,229,0.08)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.2)" }}>
+        <Loader2 size={11} className="animate-spin" />Processing
       </span>
     );
   if (status === "ready")
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">
-        <CheckCircle2 size={11} />
-        Ready
+        <CheckCircle2 size={11} />Ready
       </span>
     );
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30">
-      <AlertCircle size={11} />
-      Error
+      <AlertCircle size={11} />Error
     </span>
   );
 }
+
+// ── Payment milestones section ────────────────────────────────────────────────
+
+function PaymentMilestones({ clauses }: { clauses: Clause[] }) {
+  const milestones = clauses
+    .filter((c) => c.type === "payment_milestone")
+    .sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+
+  if (!milestones.length) return null;
+
+  const totalAmount = milestones.reduce((s, c) => s + (c.amount ?? 0), 0);
+
+  return (
+    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={14} className="text-[var(--fg-muted)]" />
+          <h3 className="text-sm font-semibold text-[var(--fg-primary)]">Payment Milestones</h3>
+          <span className="text-xs font-mono text-[var(--fg-muted)] bg-[var(--surface-subtle)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded">
+            {milestones.length}
+          </span>
+        </div>
+        {totalAmount > 0 && (
+          <span className="text-sm font-semibold font-mono" style={{ color: "#0072E5" }}>
+            {formatCurrency(totalAmount)}
+          </span>
+        )}
+      </div>
+
+      {/* Cash flow bar */}
+      {totalAmount > 0 && (
+        <div className="mb-4 space-y-1.5">
+          <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
+            {milestones.map((m) => {
+              const pct = totalAmount > 0 ? ((m.amount ?? 0) / totalAmount) * 100 : 0;
+              const d   = m.dueDate ? daysUntil(m.dueDate) : null;
+              const color = d !== null && d < 0 ? "#ef4444" : d !== null && d <= 7 ? "#f59e0b" : "#0072E5";
+              return (
+                <div
+                  key={m.id}
+                  style={{ width: `${pct}%`, backgroundColor: color }}
+                  title={`${m.title}: ${m.amount ? formatCurrency(m.amount) : "—"}`}
+                />
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-[var(--fg-muted)]">Cash flow distribution across milestones</p>
+        </div>
+      )}
+
+      {/* Timeline list */}
+      <div className="relative pl-5 space-y-4">
+        <div className="absolute left-1.5 top-2 bottom-2 w-px bg-[var(--border-subtle)]" />
+        {milestones.map((m, i) => {
+          const d     = m.dueDate ? daysUntil(m.dueDate) : null;
+          const color = d !== null && d < 0 ? "#ef4444" : d !== null && d <= 7 ? "#f59e0b" : "#0072E5";
+          const pct   = totalAmount > 0 ? Math.round(((m.amount ?? 0) / totalAmount) * 100) : null;
+          return (
+            <div key={m.id} className="relative">
+              <div
+                className="absolute -left-5 top-1 w-3 h-3 rounded-full border-2 border-[var(--surface-elevated)]"
+                style={{ backgroundColor: color }}
+              />
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--fg-primary)]">{m.title}</p>
+                  {m.summary && (
+                    <p className="text-xs text-[var(--fg-secondary)] mt-0.5 line-clamp-1">{m.summary}</p>
+                  )}
+                  {m.dueDate && (
+                    <p className="text-[10px] font-mono text-[var(--fg-muted)] mt-1">
+                      {new Date(m.dueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                      {d !== null && (
+                        <span className="ml-2 font-semibold" style={{ color }}>
+                          {d < 0 ? `${Math.abs(d)}d overdue` : d === 0 ? "Due today" : `${d}d remaining`}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  {m.amount && (
+                    <p className="text-sm font-semibold font-mono text-[var(--fg-primary)]">
+                      {formatCurrency(m.amount)}
+                    </p>
+                  )}
+                  {pct !== null && (
+                    <p className="text-[10px] font-mono text-[var(--fg-muted)]">{pct}% of total</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Termination summary ───────────────────────────────────────────────────────
+
+function TerminationSummary({ clauses }: { clauses: Clause[] }) {
+  const termination = clauses.filter((c) => c.type === "termination_notice");
+  if (!termination.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <FileWarning size={13} className="text-amber-600 dark:text-amber-400" />
+        <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+          Termination ({termination.length})
+        </h3>
+      </div>
+      <div className="space-y-3">
+        {termination.map((c) => (
+          <div key={c.id} className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-[var(--fg-primary)]">{c.title}</p>
+              <p className="text-xs text-[var(--fg-secondary)] mt-0.5 line-clamp-2">{c.summary}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              {c.noticeDays && (
+                <>
+                  <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-wider">Notice</p>
+                  <p className="text-sm font-bold font-mono text-[var(--fg-primary)]">{c.noticeDays}d</p>
+                </>
+              )}
+              <RiskBadge level={c.riskLevel} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default async function ContractDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const session = await getSession();
-  const workspace = session?.workspace ?? "";
+  const { id }      = await params;
+  const session     = await getSession();
+  const workspace   = session?.workspace ?? "";
 
   const dbContract = await dbGetContract(workspace, id).catch(() => null);
   if (!dbContract) notFound();
@@ -52,9 +196,10 @@ export default async function ContractDetailPage({
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
 
-  const days      = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
-  const highRisk  = clauses.filter((c) => c.riskLevel === "high");
-  const withDates = clauses.filter((c) => c.dueDate);
+  const days       = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
+  const highRisk   = clauses.filter((c) => c.riskLevel === "high");
+  const withDates  = clauses.filter((c) => c.dueDate);
+  const riskScore  = computeRiskScore(clauses);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -69,7 +214,7 @@ export default async function ContractDetailPage({
 
       {/* Header card */}
       <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-[var(--fg-muted)] mb-1">{contract.clientName}</p>
             <h1 className="text-xl font-bold text-[var(--fg-primary)] tracking-tight mb-3">
@@ -81,13 +226,28 @@ export default async function ContractDetailPage({
               <span className="text-xs font-mono text-[var(--fg-muted)] bg-[var(--surface-subtle)] border border-[var(--border-subtle)] px-2 py-0.5 rounded uppercase">
                 {contract.fileType}
               </span>
-              <span className="text-xs font-mono text-[var(--fg-muted)]">
-                {contract.pageCount} pages
-              </span>
+              <span className="text-xs font-mono text-[var(--fg-muted)]">{contract.pageCount} pages</span>
             </div>
+
+            {contract.aiSummary && (
+              <div className="mt-5 pt-5 border-t border-[var(--border-subtle)]">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--fg-muted)] mb-2">AI Summary</p>
+                <p className="text-sm text-[var(--fg-secondary)] leading-relaxed">{contract.aiSummary}</p>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          {/* Risk gauge */}
+          {clauses.length > 0 && (
+            <div className="shrink-0 flex flex-col items-center gap-1">
+              <RiskGauge score={riskScore} />
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-[var(--fg-muted)]">
+                Risk Score
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2 shrink-0 sm:self-start">
             <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-all">
               <Download size={14} />
               Download
@@ -101,18 +261,6 @@ export default async function ContractDetailPage({
             </Link>
           </div>
         </div>
-
-        {/* AI Summary */}
-        {contract.aiSummary && (
-          <div className="mt-5 pt-5 border-t border-[var(--border-subtle)]">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--fg-muted)] mb-2">
-              AI Summary
-            </p>
-            <p className="text-sm text-[var(--fg-secondary)] leading-relaxed">
-              {contract.aiSummary}
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Stats row */}
@@ -121,41 +269,50 @@ export default async function ContractDetailPage({
           {
             label: "Contract Value",
             value: contract.contractValue ? formatCurrency(contract.contractValue) : "—",
-            accent: "indigo" as const,
+            leftColor: "#0072E5",
+            textColor: "text-[#0072E5] dark:text-[#75D8FC]",
             Icon: DollarSign,
           },
           {
             label: "Total Clauses",
             value: String(clauses.length),
-            accent: "slate" as const,
+            leftColor: "var(--border-color)",
+            textColor: "text-[var(--fg-primary)]",
             Icon: Shield,
           },
           {
             label: "High-Risk",
             value: String(highRisk.length),
-            accent: highRisk.length > 0 ? "red" as const : "slate" as const,
+            leftColor: highRisk.length > 0 ? "#ef4444" : "var(--border-color)",
+            textColor: highRisk.length > 0 ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]",
             Icon: AlertCircle,
           },
           {
             label: days !== null ? (days < 0 ? "Expired" : "Expires in") : "Expiry",
             value: days !== null ? (days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? "Today" : `${days}d`) : "—",
-            accent: (days !== null && days <= 7) ? "amber" as const : (days !== null && days < 0) ? "red" as const : "slate" as const,
+            leftColor: (days !== null && days <= 7) ? "#f59e0b" : (days !== null && days < 0) ? "#ef4444" : "var(--border-color)",
+            textColor: (days !== null && days <= 7) ? "text-amber-600 dark:text-amber-400" : (days !== null && days < 0) ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]",
             Icon: Calendar,
           },
-        ].map(({ label, value, accent, Icon }) => {
-          const leftBorder = accent === "indigo" ? "border-l-[#0072E5]" : accent === "red" ? "border-l-red-500" : accent === "amber" ? "border-l-amber-500" : "border-l-[var(--border-color)]";
-          const textColor  = accent === "indigo" ? "text-[#0072E5] dark:text-[#75D8FC]" : accent === "red" ? "text-red-600 dark:text-red-400" : accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]";
-          return (
-            <div key={label} className={`rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2 ${leftBorder}`}>
-              <div className="flex items-center gap-1.5 mb-2">
-                <Icon size={12} className="text-[var(--fg-muted)]" />
-                <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
-              </div>
-              <p className={`text-2xl font-bold font-mono ${textColor}`}>{value}</p>
+        ].map(({ label, value, leftColor, textColor, Icon }) => (
+          <div
+            key={label}
+            className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2"
+            style={{ borderLeftColor: leftColor }}
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <Icon size={12} className="text-[var(--fg-muted)]" />
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
-          );
-        })}
+            <p className={`text-2xl font-bold font-mono ${textColor}`}>{value}</p>
+          </div>
+        ))}
       </div>
+
+      {/* Payment milestones (full width) */}
+      {contract.status === "ready" && clauses.length > 0 && (
+        <PaymentMilestones clauses={clauses} />
+      )}
 
       {/* Content + sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -173,9 +330,7 @@ export default async function ContractDetailPage({
             <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/10 p-12 text-center">
               <AlertCircle size={36} className="mx-auto mb-4 text-red-500" />
               <p className="text-[var(--fg-primary)] font-semibold mb-1">Extraction failed</p>
-              <p className="text-sm text-[var(--fg-muted)] mb-4">
-                The AI could not process this document. Check the file and retry.
-              </p>
+              <p className="text-sm text-[var(--fg-muted)] mb-4">The AI could not process this document. Check the file and retry.</p>
               <button className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline">
                 Retry extraction &rarr;
               </button>
@@ -185,14 +340,15 @@ export default async function ContractDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Termination summary */}
+          {contract.status === "ready" && <TerminationSummary clauses={clauses} />}
+
           {/* Deadlines */}
           {withDates.length > 0 && (
             <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar size={13} className="text-[var(--fg-muted)]" />
-                <h3 className="text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wider">
-                  Deadlines
-                </h3>
+                <h3 className="text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wider">All Deadlines</h3>
               </div>
               <div className="space-y-3">
                 {withDates.map((c) => {
@@ -238,15 +394,13 @@ export default async function ContractDetailPage({
           <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
             <div className="flex items-center gap-2 mb-3">
               <Shield size={13} className="text-[var(--fg-muted)]" />
-              <h3 className="text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wider">
-                Risk Breakdown
-              </h3>
+              <h3 className="text-xs font-semibold text-[var(--fg-secondary)] uppercase tracking-wider">Risk Breakdown</h3>
             </div>
             {clauses.length > 0 ? (
               <div className="space-y-2.5">
                 {(["high", "medium", "low"] as const).map((level) => {
                   const count = clauses.filter((c) => c.riskLevel === level).length;
-                  const pct   = clauses.length ? Math.round((count / clauses.length) * 100) : 0;
+                  const pct   = Math.round((count / clauses.length) * 100);
                   return (
                     <div key={level} className="flex items-center gap-3">
                       <RiskBadge level={level} showDot={false} />

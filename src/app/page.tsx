@@ -240,8 +240,7 @@ export default function HomePage() {
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
 
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo-icon.svg" alt="scriviq" width={27} height={27} />
-            <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em", color: INK }}>scriviq</span>
+            <Image src="/logo.svg" alt="scriviq" width={127} height={27} />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -282,7 +281,7 @@ export default function HomePage() {
 
               {/* Headline — dramatic size contrast */}
               <h1 className="font-bold mb-6"
-                style={{ fontSize: "clamp(54px,8vw,116px)", lineHeight: 0.92, letterSpacing: "-0.035em", color: INK }}>
+                style={{ fontSize: "clamp(48px,8vw,94px)", lineHeight: 0.92, letterSpacing: "-0.035em", color: INK }}>
                 Know every<br />
                 <span className="serif-i" style={{ fontWeight: 600 }}>clause.</span><br />
                 Miss nothing.
