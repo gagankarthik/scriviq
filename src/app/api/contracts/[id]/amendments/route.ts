@@ -5,30 +5,44 @@ import {
   dbGetContract, dbListClauses,
   dbListAmendments, dbPutAmendment,
 } from "@/lib/aws/contracts";
+import { extractTextFromBuffer } from "@/lib/extractText";
 import type { Amendment, ClauseChange, RiskLevel, ClauseChangeStatus } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const AMENDMENT_PROMPT = `You are a contract amendment analysis AI for a digital agency.
+// Thorough prompt — accuracy is critical for business use
+const AMENDMENT_PROMPT = `You are a contract amendment analysis AI for a professional digital agency.
+Accuracy is critical — real business decisions depend on your output.
 
-You will receive:
-1. The existing contract clauses (JSON with id, type, title, rawText)
-2. An amendment document text
+You receive:
+1. EXISTING CLAUSES — JSON array with fields: id, type, title, rawText, amount, dueDate, noticeDays
+2. AMENDMENT DOCUMENT — the full text of the revised or amended contract/SOW
 
-Identify every material change. Return JSON with a "changes" array where each item has:
-- id: "change-<nn>" (e.g. "change-01")
+Perform an exhaustive clause-by-clause comparison. Identify EVERY material change.
+
+Return ONLY a valid JSON object: { "changes": [...] }
+
+Each change object:
+- id: "change-<nn>" (zero-padded, e.g. "change-01")
 - changeType: "added" | "modified" | "removed"
-- clauseId: string | null (original clause id being modified/removed; null for additions)
-- title: string (concise clause name)
-- originalText: string | null (verbatim from original clause; null for additions)
-- newText: string | null (verbatim from amendment; null for removals)
+- clauseId: existing clause id string if modifying/removing; null for new additions
+- title: concise, specific clause name
+- originalText: verbatim text from original clause (null for additions)
+- newText: verbatim text from amendment document (null for removals)
 - riskLevel: "low" | "medium" | "high"
-- riskReason: string | null (required for medium/high)
+  HIGH = new financial obligation, payment increase, extended liability, removed protection, shortened notice period, added penalty
+  MEDIUM = scope expansion, deadline change, new condition, changed notice period
+  LOW = wording clarification, minor administrative change
+- riskReason: specific explanation including dollar amounts and dates if applicable (required for medium/high, null for low)
 - status: "pending"
 
-Focus on material changes: scope additions, payment changes, deadline shifts, new obligations, removed protections.`;
+Rules:
+- Flag every change to payment terms, amounts, deadlines, obligations, IP rights, and termination clauses — no exceptions
+- Prefer flagging something borderline as MEDIUM rather than ignoring it
+- Verbatim originalText and newText are mandatory for "modified" changes
+- If the amendment REMOVES a clause entirely, changeType is "removed" with originalText set`;
 
 export async function GET(
   _req: NextRequest,
@@ -50,9 +64,38 @@ export async function POST(
   const { id } = await params;
 
   try {
-    const body = await request.json() as { title: string; text: string; description?: string };
-    if (!body.title?.trim() || !body.text?.trim())
-      return Response.json({ error: "title and text are required" }, { status: 400 });
+    let title = "", description = "", amendmentText = "";
+
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("multipart/form-data")) {
+      // File upload path
+      const formData = await request.formData();
+      title       = ((formData.get("title") as string | null) ?? "").trim();
+      description = ((formData.get("description") as string | null) ?? "").trim();
+      const file  = formData.get("file") as File | null;
+
+      if (!file) return Response.json({ error: "file is required" }, { status: 400 });
+
+      const buf = Buffer.from(await file.arrayBuffer());
+      amendmentText = await extractTextFromBuffer(buf, file.name);
+
+      if (!amendmentText) {
+        return Response.json(
+          { error: "Could not extract text from the uploaded file. Try pasting the text instead." },
+          { status: 422 }
+        );
+      }
+    } else {
+      // JSON text-paste path
+      const body = await request.json() as { title: string; text: string; description?: string };
+      title         = (body.title ?? "").trim();
+      description   = (body.description ?? "").trim();
+      amendmentText = (body.text ?? "").trim();
+    }
+
+    if (!title) return Response.json({ error: "title is required" }, { status: 400 });
+    if (!amendmentText) return Response.json({ error: "amendment text is required" }, { status: 400 });
 
     const [contract, existingClauses] = await Promise.all([
       dbGetContract(session.workspace, id),
@@ -60,22 +103,39 @@ export async function POST(
     ]);
     if (!contract) return Response.json({ error: "Contract not found" }, { status: 404 });
 
+    // Include all fields that help GPT understand what has changed
     const clauseSummary = existingClauses.map((c) => ({
-      id: c.id, type: c.type, title: c.title, rawText: c.rawText,
+      id:          c.id,
+      type:        c.type,
+      title:       c.title,
+      rawText:     c.rawText,
+      amount:      c.amount,
+      dueDate:     c.dueDate,
+      noticeDays:  c.noticeDays,
+      riskLevel:   c.riskLevel,
     }));
+
+    const userMessage = [
+      `CONTRACT: ${contract.title} (${contract.clientName})`,
+      `VALUE: ${contract.contractValue ? `$${contract.contractValue}` : "not specified"}`,
+      `EXPIRY: ${contract.expiryDate ?? "not specified"}`,
+      ``,
+      `EXISTING CLAUSES (${existingClauses.length} total):`,
+      JSON.stringify(clauseSummary, null, 2),
+      ``,
+      `AMENDMENT DOCUMENT:`,
+      amendmentText,
+    ].join("\n");
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: AMENDMENT_PROMPT },
-        {
-          role: "user",
-          content: `Contract: ${contract.title} (${contract.clientName})\n\nExisting clauses:\n${JSON.stringify(clauseSummary, null, 2)}\n\nAmendment document:\n${body.text}`,
-        },
+        { role: "system",  content: AMENDMENT_PROMPT },
+        { role: "user",    content: userMessage },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 3000,
+      temperature: 0.05,  // Near-deterministic for business accuracy
+      max_tokens:  4000,
     });
 
     const rawJson = completion.choices[0].message.content ?? "{}";
@@ -98,8 +158,8 @@ export async function POST(
     const amendment: Amendment = {
       id:          `amendment-${Date.now()}`,
       contractId:  id,
-      title:       body.title.trim(),
-      description: body.description?.trim() ?? "",
+      title,
+      description,
       status:      "pending_review",
       uploadedAt:  new Date().toISOString(),
       changes,

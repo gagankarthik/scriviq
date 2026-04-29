@@ -9,6 +9,9 @@ const ALLOWED_ORIGINS = [
 const nextConfig: NextConfig = {
   reactCompiler: true,
 
+  // Keep native Node modules out of the webpack bundle
+  serverExternalPackages: ["pdf-parse", "mammoth"],
+
   async headers() {
     return [
       {

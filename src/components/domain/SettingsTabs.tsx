@@ -1,20 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, CreditCard, User, Bell, Shield } from "lucide-react";
+import {
+  CheckCircle2, CreditCard, User, Bell, Shield,
+  FileText, AlertTriangle, TrendingUp, Clock,
+} from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { formatCurrency } from "@/lib/utils";
 
 type Tab = "profile" | "notifications" | "billing";
 
-export interface SettingsUser {
-  name:  string;
-  email: string;
+export interface SettingsUser  { name: string; email: string }
+export interface SettingsStats {
+  totalValue: number; activeContracts: number;
+  highRiskClauseCount: number; upcomingDeadlineCount: number;
+  processingCount: number; pendingAlertCount: number;
 }
 
-function Toggle({
-  label, sub, checked, onChange,
-}: {
+function Toggle({ label, sub, checked, onChange }: {
   label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void;
 }) {
   return (
@@ -28,26 +32,54 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className="relative inline-flex h-6 w-10 shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0072E5]/30"
-        style={{ backgroundColor: checked ? "#0072E5" : undefined }}
-        data-unchecked={!checked || undefined}
       >
-        <span
-          className="absolute inset-0 rounded-full transition-colors duration-200"
-          style={{ backgroundColor: checked ? "#0072E5" : "rgb(148 163 184 / 0.3)" }}
-        />
+        <span className="absolute inset-0 rounded-full transition-colors duration-200"
+          style={{ backgroundColor: checked ? "#0072E5" : "rgb(148 163 184 / 0.3)" }} />
         <span className={`relative inline-block w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-200 mt-1 z-10 ${checked ? "translate-x-5" : "translate-x-1"}`} />
       </button>
     </div>
   );
 }
 
+// ── Usage stats band ──────────────────────────────────────────────────────────
+
+function UsageStats({ stats }: { stats: SettingsStats }) {
+  const items = [
+    { label: "Active Contracts", value: String(stats.activeContracts), Icon: FileText, color: "#0072E5" },
+    { label: "Portfolio Value",  value: formatCurrency(stats.totalValue),     Icon: TrendingUp, color: "#10b981" },
+    { label: "High-Risk Clauses",value: String(stats.highRiskClauseCount),   Icon: AlertTriangle, color: "#ef4444" },
+    { label: "Upcoming Deadlines",value: String(stats.upcomingDeadlineCount), Icon: Clock,   color: "#f59e0b" },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] mb-4">
+        Workspace Overview
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {items.map(({ label, value, Icon, color }) => (
+          <div key={label} className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <Icon size={12} style={{ color }} />
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
+            </div>
+            <p className="text-xl font-bold font-mono" style={{ color }}>{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Profile panel ─────────────────────────────────────────────────────────────
+
 function ProfilePanel({ user }: { user: SettingsUser }) {
-  const [saving, setSaving] = useState(false);
-  const [saved,  setSaved]  = useState(false);
-  const [form,   setForm]   = useState({
+  const [saving, setSaving]  = useState(false);
+  const [saved,  setSaved]   = useState(false);
+  const [error,  setError]   = useState("");
+  const [form,   setForm]    = useState({
     name:     user.name,
     email:    user.email,
-    company:  "scriviq",
     timezone: "UTC+5:30",
   });
 
@@ -58,23 +90,37 @@ function ProfilePanel({ user }: { user: SettingsUser }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError("");
+    setSaved(false);
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ name: form.name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Save failed");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save changes.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <form onSubmit={save} className="space-y-4 max-w-lg">
-      <Input label="Full name"        id="name"    value={form.name}     onChange={field("name")} />
-      <Input label="Email address"    id="email"   type="email" value={form.email}  onChange={field("email")} />
-      <Input label="Company / Agency" id="company" value={form.company}  onChange={field("company")} />
-      <Select
-        label="Timezone"
-        id="timezone"
-        value={form.timezone}
-        onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}
-      >
+      <Input label="Full name" id="name" value={form.name} onChange={field("name")} />
+      <Input label="Email address" id="email" type="email" value={form.email} onChange={field("email")}
+        disabled />
+      <p className="text-xs text-[var(--fg-muted)] -mt-2">
+        Email cannot be changed here — contact support if needed.
+      </p>
+      <Select label="Timezone" id="timezone" value={form.timezone}
+        onChange={(e) => setForm((p) => ({ ...p, timezone: e.target.value }))}>
         <option value="UTC-8:00">UTC−8:00 Pacific</option>
         <option value="UTC-5:00">UTC−5:00 Eastern</option>
         <option value="UTC+0:00">UTC+0:00 London</option>
@@ -82,18 +128,22 @@ function ProfilePanel({ user }: { user: SettingsUser }) {
         <option value="UTC+5:30">UTC+5:30 Mumbai</option>
         <option value="UTC+8:00">UTC+8:00 Singapore</option>
       </Select>
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
+
       <div className="pt-2 flex items-center gap-3">
         <Button type="submit" loading={saving} glow>Save changes</Button>
         {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 size={15} />
-            Saved
+          <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 animate-fade-in">
+            <CheckCircle2 size={15} />Saved
           </span>
         )}
       </div>
     </form>
   );
 }
+
+// ── Notifications panel ───────────────────────────────────────────────────────
 
 function NotificationsPanel() {
   const [settings, setSettings] = useState({
@@ -104,7 +154,6 @@ function NotificationsPanel() {
     teamActivity: true,
     slackWebhook: false,
   });
-
   const toggle = (k: keyof typeof settings) => (v: boolean) => setSettings((p) => ({ ...p, [k]: v }));
 
   return (
@@ -113,39 +162,37 @@ function NotificationsPanel() {
         <div className="py-3">
           <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Deadline Alerts</p>
         </div>
-        <Toggle label="7-day reminders"  sub="Email when a clause deadline is 7 days away" checked={settings.alert7d}      onChange={toggle("alert7d")} />
-        <Toggle label="1-day reminders"  sub="Email the day before a clause deadline"       checked={settings.alert1d}      onChange={toggle("alert1d")} />
-        <Toggle label="Overdue alerts"   sub="Email when a deadline has passed"             checked={settings.alertOverdue} onChange={toggle("alertOverdue")} />
+        <Toggle label="7-day reminders"  sub="Email when a clause deadline is 7 days away"  checked={settings.alert7d}      onChange={toggle("alert7d")} />
+        <Toggle label="1-day reminders"  sub="Email the day before a clause deadline"        checked={settings.alert1d}      onChange={toggle("alert1d")} />
+        <Toggle label="Overdue alerts"   sub="Email when a deadline has passed"              checked={settings.alertOverdue} onChange={toggle("alertOverdue")} />
       </div>
 
       <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] px-5 divide-y divide-[var(--border-subtle)]">
         <div className="py-3">
           <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Digest &amp; Integrations</p>
         </div>
-        <Toggle label="Weekly digest"     sub="Summary of all upcoming deadlines every Monday"           checked={settings.weeklyDigest} onChange={toggle("weeklyDigest")} />
-        <Toggle label="Team activity"     sub="Notify when teammates upload or action clauses"           checked={settings.teamActivity} onChange={toggle("teamActivity")} />
-        <Toggle label="Slack integration" sub="Post critical alerts to a Slack channel via webhook"     checked={settings.slackWebhook} onChange={toggle("slackWebhook")} />
+        <Toggle label="Weekly digest"     sub="Summary of all upcoming deadlines every Monday"         checked={settings.weeklyDigest} onChange={toggle("weeklyDigest")} />
+        <Toggle label="Team activity"     sub="Notify when teammates upload or action clauses"         checked={settings.teamActivity} onChange={toggle("teamActivity")} />
+        <Toggle label="Slack integration" sub="Post critical alerts to a Slack channel via webhook"   checked={settings.slackWebhook} onChange={toggle("slackWebhook")} />
       </div>
 
       {settings.slackWebhook && (
         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
           <Input label="Slack Webhook URL" placeholder="https://hooks.slack.com/services/..." />
-          <div className="mt-3">
-            <Button size="sm" glow>Save webhook</Button>
-          </div>
+          <div className="mt-3"><Button size="sm" glow>Save webhook</Button></div>
         </div>
       )}
     </div>
   );
 }
 
+// ── Billing panel ─────────────────────────────────────────────────────────────
+
 function BillingPanel() {
   return (
     <div className="max-w-lg space-y-4">
-      <div
-        className="rounded-2xl p-5"
-        style={{ border: "1px solid rgba(0,114,229,0.2)", background: "rgba(0,114,229,0.05)" }}
-      >
+      <div className="rounded-2xl p-5"
+        style={{ border: "1px solid rgba(0,114,229,0.2)", background: "rgba(0,114,229,0.05)" }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "#0072E5" }}>Pro Team</p>
@@ -160,11 +207,9 @@ function BillingPanel() {
             Add payment method
           </Button>
         </div>
-        <div
-          className="mt-4 pt-4 grid grid-cols-2 gap-3 text-xs"
-          style={{ borderTop: "1px solid rgba(0,114,229,0.15)" }}
-        >
-          {["Unlimited contracts", "AI clause extraction", "Deadline alerts", "Team workspace", "Audit logs", "Priority support"].map((f) => (
+        <div className="mt-4 pt-4 grid grid-cols-2 gap-3 text-xs"
+          style={{ borderTop: "1px solid rgba(0,114,229,0.15)" }}>
+          {["Unlimited contracts", "AI clause extraction", "Deadline alerts", "Team workspace", "Amendment tracking", "Priority support"].map((f) => (
             <div key={f} className="flex items-center gap-1.5 text-[var(--fg-secondary)]">
               <CheckCircle2 size={12} className="shrink-0" style={{ color: "#0072E5" }} />
               {f}
@@ -193,17 +238,23 @@ function BillingPanel() {
   );
 }
 
-export function SettingsTabs({ user }: { user: SettingsUser }) {
+// ── Tabs shell ────────────────────────────────────────────────────────────────
+
+export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: SettingsStats }) {
   const [tab, setTab] = useState<Tab>("profile");
 
   const TABS: { value: Tab; label: string; Icon: React.ElementType }[] = [
-    { value: "profile",       label: "Profile",       Icon: User },
-    { value: "notifications", label: "Notifications", Icon: Bell },
+    { value: "profile",       label: "Profile",       Icon: User       },
+    { value: "notifications", label: "Notifications", Icon: Bell       },
     { value: "billing",       label: "Billing",       Icon: CreditCard },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Live usage stats */}
+      <UsageStats stats={stats} />
+
+      {/* Tab selector */}
       <div className="flex items-center gap-1 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-color)] p-1 w-fit">
         {TABS.map(({ value, label, Icon }) => (
           <button

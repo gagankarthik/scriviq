@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2,
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
+  Activity, GitBranch, CheckSquare,
 } from "lucide-react";
 import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
@@ -12,6 +13,7 @@ import { RiskGauge } from "@/components/domain/RiskGauge";
 import { ClauseList } from "@/components/domain/ClauseList";
 import { ContractActions } from "@/components/domain/ContractActions";
 import { AmendmentPanel } from "@/components/domain/AmendmentPanel";
+import { ContractEditModal } from "@/components/domain/ContractEditModal";
 import type { Clause } from "@/lib/mock-data";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -199,20 +201,31 @@ export default async function ContractDetailPage({
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
 
-  const days       = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
-  const highRisk   = clauses.filter((c) => c.riskLevel === "high");
-  const withDates  = clauses.filter((c) => c.dueDate);
-  const riskScore  = computeRiskScore(clauses);
+  const days           = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
+  const highRisk       = clauses.filter((c) => c.riskLevel === "high");
+  const mediumRisk     = clauses.filter((c) => c.riskLevel === "medium");
+  const activeClauses  = clauses.filter((c) => c.status === "active");
+  const withDates      = clauses.filter((c) => c.dueDate);
+  const riskScore      = computeRiskScore(clauses);
+  const milestoneTotal = clauses
+    .filter((c) => c.type === "payment_milestone")
+    .reduce((s, c) => s + (c.amount ?? 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-[var(--fg-muted)] font-mono">
-        <Link href="/contracts" className="hover:text-[#0072E5] dark:hover:text-[#75D8FC] transition-colors">
-          Contracts
+      {/* Back button + breadcrumb row */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/contracts"
+          className="inline-flex items-center gap-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors"
+        >
+          <ArrowLeft size={13} />
+          Back to Contracts
         </Link>
-        <span>/</span>
-        <span className="text-[var(--fg-secondary)] truncate max-w-xs">{contract.title}</span>
+        <span className="text-[var(--fg-muted)] text-xs">/</span>
+        <span className="text-xs text-[var(--fg-secondary)] font-mono truncate max-w-xs">
+          {contract.title}
+        </span>
       </div>
 
       {/* Header card */}
@@ -252,24 +265,26 @@ export default async function ContractDetailPage({
 
           <div className="flex flex-col items-end gap-2 shrink-0 sm:self-start">
             <div className="flex items-center gap-2">
+              <ContractEditModal
+                contractId={id}
+                initial={{
+                  title: contract.title,
+                  clientName: contract.clientName,
+                  contractValue: contract.contractValue ?? undefined,
+                  expiryDate: contract.expiryDate ?? undefined,
+                }}
+              />
               <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-all">
                 <Download size={14} />
                 Download
               </button>
               <ContractActions contractId={id} contractTitle={contract.title} />
-              <Link
-                href="/contracts"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-muted)] hover:text-[var(--fg-primary)] text-sm transition-all"
-              >
-                <ArrowLeft size={14} />
-                Back
-              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — primary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           {
@@ -311,6 +326,59 @@ export default async function ContractDetailPage({
               <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
             <p className={`text-2xl font-bold font-mono ${textColor}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Stats row — secondary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Medium-Risk",
+            value: String(mediumRisk.length),
+            leftColor: mediumRisk.length > 0 ? "#f59e0b" : "var(--border-color)",
+            textColor: mediumRisk.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]",
+            Icon: Activity,
+            sub: "clauses",
+          },
+          {
+            label: "Active Clauses",
+            value: String(activeClauses.length),
+            leftColor: "#10b981",
+            textColor: "text-emerald-600 dark:text-emerald-400",
+            Icon: CheckSquare,
+            sub: `of ${clauses.length} total`,
+          },
+          {
+            label: "Amendments",
+            value: String(amendments.length),
+            leftColor: amendments.some((a) => a.status === "pending_review") ? "#f59e0b" : "var(--border-color)",
+            textColor: amendments.some((a) => a.status === "pending_review") ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]",
+            Icon: GitBranch,
+            sub: amendments.some((a) => a.status === "pending_review")
+              ? `${amendments.filter((a) => a.status === "pending_review").length} pending`
+              : "all resolved",
+          },
+          {
+            label: "Milestone Total",
+            value: milestoneTotal > 0 ? formatCurrency(milestoneTotal) : "—",
+            leftColor: milestoneTotal > 0 ? "#0072E5" : "var(--border-color)",
+            textColor: milestoneTotal > 0 ? "text-[#0072E5] dark:text-[#75D8FC]" : "text-[var(--fg-primary)]",
+            Icon: TrendingUp,
+            sub: "payment milestones",
+          },
+        ].map(({ label, value, leftColor, textColor, Icon, sub }) => (
+          <div
+            key={label}
+            className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2"
+            style={{ borderLeftColor: leftColor }}
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <Icon size={12} className="text-[var(--fg-muted)]" />
+              <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
+            </div>
+            <p className={`text-xl font-bold font-mono ${textColor}`}>{value}</p>
+            {sub && <p className="text-[10px] text-[var(--fg-muted)] mt-1">{sub}</p>}
           </div>
         ))}
       </div>
