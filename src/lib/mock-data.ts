@@ -16,10 +16,14 @@ export type ClauseType =
   | "scope_change"
   | "other";
 export type ClauseStatus = "active" | "actioned" | "expired";
-export type AlertType = "7_day" | "1_day" | "overdue";
+export type AlertType = "7_day" | "1_day" | "overdue" | "budget_80pct";
 export type AlertStatus = "pending" | "sent" | "dismissed";
 export type TeamRole = "owner" | "admin" | "member";
 export type PlanType = "trial" | "pro" | "enterprise";
+export type SowType = "fixed-price" | "performance-based" | "loe";
+export type ApprovalStatus = "draft" | "pending_approval" | "approved" | "rejected";
+export type ComplianceRuleCondition = "must_contain" | "must_not_contain" | "must_exist" | "must_not_exist";
+export type ComplianceSeverity = "error" | "warning";
 
 export interface Contract {
   id: string;
@@ -36,6 +40,12 @@ export interface Contract {
   fileType: "pdf" | "docx";
   pageCount: number;
   aiSummary: string | null;
+  sowType?: SowType;
+  approvalStatus?: ApprovalStatus;
+  approvers?: string[];
+  approvalComments?: string;
+  budgetHours?: number;
+  budgetRate?: number;
 }
 
 export interface Clause {
@@ -52,6 +62,61 @@ export interface Clause {
   riskReason: string | null;
   status: ClauseStatus;
   tags: string[];
+  complianceFlags?: string[];
+}
+
+export interface ComplianceRule {
+  id: string;
+  name: string;
+  description: string;
+  clauseType: ClauseType | "any";
+  condition: ComplianceRuleCondition;
+  value?: string;
+  severity: ComplianceSeverity;
+  createdAt: string;
+}
+
+export interface ApprovalStep {
+  id: string;
+  contractId: string;
+  step: number;
+  approverEmail: string;
+  approverName: string;
+  status: "pending" | "approved" | "rejected";
+  comments?: string;
+  timestamp?: string;
+}
+
+export interface TemplateSection {
+  id: string;
+  clauseType: ClauseType;
+  title: string;
+  content: string;
+  required: boolean;
+  riskLevel: RiskLevel;
+}
+
+export interface SOWTemplate {
+  id: string;
+  title: string;
+  description: string;
+  sowType: SowType;
+  sections: TemplateSection[];
+  variables: string[];
+  createdAt: string;
+  updatedAt: string;
+  usageCount: number;
+}
+
+export interface TimesheetEntry {
+  id: string;
+  contractId: string;
+  memberName: string;
+  date: string;
+  hours: number;
+  rate?: number;
+  description: string;
+  createdAt: string;
 }
 
 export interface Alert {

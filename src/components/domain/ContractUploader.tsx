@@ -32,6 +32,8 @@ const STAGES: StageConfig[] = [
 
 const STAGE_ORDER: Stage[] = ["uploading", "scanning", "extracting", "analyzing", "done"];
 
+type SowType = "fixed-price" | "performance-based" | "loe";
+
 interface QueuedFile {
   id:         string;
   file:       File;
@@ -308,7 +310,7 @@ export function ContractUploader() {
   const [file,      setFile]      = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [dragging,  setDragging]  = useState(false);
-  const [form,      setForm]      = useState({ title: "", clientName: "", value: "", expiryDate: "" });
+  const [form,      setForm]      = useState({ title: "", clientName: "", value: "", expiryDate: "", sowType: "" as SowType | "" });
 
   // Bulk queue state
   const [bulkMode,     setBulkMode]     = useState(false);
@@ -371,6 +373,7 @@ export function ContractUploader() {
     clientName: string,
     value: string,
     expiryDate: string,
+    sowType: SowType | "",
     idx: number,
     setIdx: (n: number) => void,
     setStg: (s: Stage) => void
@@ -386,6 +389,7 @@ export function ContractUploader() {
         id: contractId, title, clientName, fileType,
         contractValue: value ? Number(value) : undefined,
         expiryDate: expiryDate || undefined,
+        ...(sowType && { sowType }),
       }),
     });
 
@@ -425,7 +429,7 @@ export function ContractUploader() {
     const contractId = genId();
     try {
       await processOne(contractId, file, form.title, form.clientName, form.value, form.expiryDate,
-        0, setQueueIdx, setStage);
+        form.sowType, 0, setQueueIdx, setStage);
       setStage("done");
       await new Promise((r) => setTimeout(r, 1200));
       router.push(`/contracts/${contractId}`);
@@ -453,7 +457,7 @@ export function ContractUploader() {
           item.title || item.file.name,
           sharedClient,
           item.value, item.expiryDate,
-          i, setQueueIdx, setStage
+          "", i, setQueueIdx, setStage
         );
       }
       setStage("done");
@@ -687,6 +691,21 @@ export function ContractUploader() {
                   prefix="$" value={form.value} onChange={field("value")} />
                 <Input label="Expiry Date (optional)" id="expiryDate" type="date"
                   value={form.expiryDate} onChange={field("expiryDate")} />
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] block mb-1.5">
+                    SOW Type (optional)
+                  </label>
+                  <select
+                    value={form.sowType}
+                    onChange={(e) => setForm((p) => ({ ...p, sowType: e.target.value as SowType | "" }))}
+                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--fg-primary)] focus:outline-none focus:border-[#0072E5] focus:ring-1 focus:ring-[#0072E5]/30"
+                  >
+                    <option value="">— Select type</option>
+                    <option value="fixed-price">Fixed-Price</option>
+                    <option value="performance-based">Performance-Based</option>
+                    <option value="loe">Level of Effort (LOE)</option>
+                  </select>
+                </div>
               </>
             )}
 

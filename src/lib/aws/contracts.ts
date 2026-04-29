@@ -6,7 +6,10 @@ import {
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { dynamo, TABLE } from "./dynamodb";
-import type { Contract, Clause, Alert, ActivityEvent, Amendment } from "@/lib/mock-data";
+import type {
+  Contract, Clause, Alert, ActivityEvent, Amendment,
+  ComplianceRule, ApprovalStep, SOWTemplate, TimesheetEntry,
+} from "@/lib/mock-data";
 
 // ── Key helpers ───────────────────────────────────────────────────────────────
 
@@ -283,6 +286,221 @@ export async function dbPutAmendment(
         ...amendment,
         PK: clausePK(workspace, amendment.contractId),
         SK: `AMENDMENT#${amendment.id}`,
+      },
+    })
+  );
+}
+
+// ── Clause text update ────────────────────────────────────────────────────────
+
+export async function dbUpdateClauseText(
+  workspace: string,
+  contractId: string,
+  clauseId: string,
+  rawText: string
+): Promise<void> {
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: {
+        PK: clausePK(workspace, contractId),
+        SK: `CLAUSE#${contractId}#${clauseId}`,
+      },
+      UpdateExpression: "SET rawText = :rt, updatedAt = :ts",
+      ExpressionAttributeValues: { ":rt": rawText, ":ts": new Date().toISOString() },
+    })
+  );
+}
+
+// ── Compliance Rules ──────────────────────────────────────────────────────────
+
+export async function dbListComplianceRules(workspace: string): Promise<ComplianceRule[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: { ":pk": workspace, ":prefix": "RULE#" },
+    })
+  );
+  return (result.Items ?? []) as ComplianceRule[];
+}
+
+export async function dbPutComplianceRule(workspace: string, rule: ComplianceRule): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: { ...rule, PK: workspace, SK: `RULE#${rule.id}` },
+    })
+  );
+}
+
+export async function dbUpdateComplianceRule(
+  workspace: string,
+  id: string,
+  updates: Partial<ComplianceRule>
+): Promise<void> {
+  const sets: string[] = [];
+  const values: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    sets.push(`${k} = :${k}`);
+    values[`:${k}`] = v;
+  }
+  if (!sets.length) return;
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: { PK: workspace, SK: `RULE#${id}` },
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeValues: values,
+    })
+  );
+}
+
+export async function dbDeleteComplianceRule(workspace: string, id: string): Promise<void> {
+  await dynamo.send(
+    new DeleteCommand({ TableName: TABLE, Key: { PK: workspace, SK: `RULE#${id}` } })
+  );
+}
+
+// ── SOW Templates ─────────────────────────────────────────────────────────────
+
+export async function dbListTemplates(workspace: string): Promise<SOWTemplate[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: { ":pk": workspace, ":prefix": "TEMPLATE#" },
+      ScanIndexForward: false,
+    })
+  );
+  return (result.Items ?? []) as SOWTemplate[];
+}
+
+export async function dbGetTemplate(workspace: string, id: string): Promise<SOWTemplate | null> {
+  const result = await dynamo.send(
+    new GetCommand({ TableName: TABLE, Key: { PK: workspace, SK: `TEMPLATE#${id}` } })
+  );
+  return (result.Item as SOWTemplate) ?? null;
+}
+
+export async function dbPutTemplate(workspace: string, tpl: SOWTemplate): Promise<void> {
+  await dynamo.send(
+    new PutCommand({ TableName: TABLE, Item: { ...tpl, PK: workspace, SK: `TEMPLATE#${tpl.id}` } })
+  );
+}
+
+export async function dbUpdateTemplate(
+  workspace: string,
+  id: string,
+  updates: Partial<SOWTemplate>
+): Promise<void> {
+  const sets: string[] = ["updatedAt = :ts"];
+  const values: Record<string, unknown> = { ":ts": new Date().toISOString() };
+  for (const [k, v] of Object.entries(updates)) {
+    if (k === "updatedAt") continue;
+    sets.push(`${k} = :${k}`);
+    values[`:${k}`] = v;
+  }
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: { PK: workspace, SK: `TEMPLATE#${id}` },
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeValues: values,
+    })
+  );
+}
+
+export async function dbDeleteTemplate(workspace: string, id: string): Promise<void> {
+  await dynamo.send(
+    new DeleteCommand({ TableName: TABLE, Key: { PK: workspace, SK: `TEMPLATE#${id}` } })
+  );
+}
+
+// ── Approvals ─────────────────────────────────────────────────────────────────
+
+export async function dbListApprovals(workspace: string, contractId: string): Promise<ApprovalStep[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: {
+        ":pk":     clausePK(workspace, contractId),
+        ":prefix": "APPROVAL#",
+      },
+    })
+  );
+  return ((result.Items ?? []) as ApprovalStep[]).sort((a, b) => a.step - b.step);
+}
+
+export async function dbPutApproval(
+  workspace: string,
+  contractId: string,
+  step: ApprovalStep
+): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: {
+        ...step,
+        PK: clausePK(workspace, contractId),
+        SK: `APPROVAL#${step.id}`,
+      },
+    })
+  );
+}
+
+export async function dbUpdateApproval(
+  workspace: string,
+  contractId: string,
+  approvalId: string,
+  updates: Partial<ApprovalStep>
+): Promise<void> {
+  const sets: string[] = [];
+  const values: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    sets.push(`${k} = :${k}`);
+    values[`:${k}`] = v;
+  }
+  if (!sets.length) return;
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: {
+        PK: clausePK(workspace, contractId),
+        SK: `APPROVAL#${approvalId}`,
+      },
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeValues: values,
+    })
+  );
+}
+
+// ── Timesheets ────────────────────────────────────────────────────────────────
+
+export async function dbListTimesheets(workspace: string, contractId: string): Promise<TimesheetEntry[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: {
+        ":pk":     clausePK(workspace, contractId),
+        ":prefix": "TIME#",
+      },
+      ScanIndexForward: false,
+    })
+  );
+  return (result.Items ?? []) as TimesheetEntry[];
+}
+
+export async function dbPutTimesheet(workspace: string, entry: TimesheetEntry): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: {
+        ...entry,
+        PK: clausePK(workspace, entry.contractId),
+        SK: `TIME#${entry.id}`,
       },
     })
   );

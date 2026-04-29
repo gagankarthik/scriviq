@@ -27,6 +27,13 @@ const TYPE_CONFIG = {
     hoverBg: "hover:bg-[var(--surface-subtle)]",
     Icon:    Clock,
   },
+  "budget_80pct": {
+    label:   "Budget 80%",
+    color:   "text-orange-600 dark:text-orange-400",
+    bg:      "border-orange-200 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/10",
+    hoverBg: "hover:bg-orange-100 dark:hover:bg-orange-950/20",
+    Icon:    AlertTriangle,
+  },
 };
 
 interface AlertRowProps {

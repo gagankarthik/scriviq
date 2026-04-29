@@ -12,11 +12,12 @@ const FILTER_TABS: { value: "" | AlertStatus; label: string }[] = [
   { value: "dismissed", label: "Dismissed" },
 ];
 
-const TYPE_ORDER: AlertType[] = ["overdue", "1_day", "7_day"];
+const TYPE_ORDER: AlertType[] = ["overdue", "1_day", "7_day", "budget_80pct"];
 const TYPE_LABELS: Record<AlertType, string> = {
-  overdue: "Overdue",
-  "1_day": "Due Tomorrow",
-  "7_day": "Due in 7 Days",
+  overdue:        "Overdue",
+  "1_day":        "Due Tomorrow",
+  "7_day":        "Due in 7 Days",
+  "budget_80pct": "Budget 80%",
 };
 
 interface AlertsManagerProps {

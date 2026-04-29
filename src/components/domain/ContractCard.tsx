@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { FileText, FileType2, AlertCircle, Loader2, ChevronRight } from "lucide-react";
+import { FileText, FileType2, AlertCircle, Loader2 } from "lucide-react";
 import { type Contract } from "@/lib/mock-data";
 import { daysUntil, formatCurrency } from "@/lib/utils";
 import { RiskBadge } from "./RiskBadge";
+import { SowTypeBadge } from "./SowTypeBadge";
 
 function StatusPill({ status }: { status: Contract["status"] }) {
   if (status === "processing")
@@ -53,7 +54,8 @@ export function ContractCard({ contract }: { contract: Contract }) {
               {contract.title}
             </h3>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            {contract.sowType && <SowTypeBadge type={contract.sowType} />}
             {contract.status === "ready" && contract.riskScore && (
               <RiskBadge level={contract.riskScore} />
             )}

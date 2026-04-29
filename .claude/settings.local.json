@@ -23,7 +23,12 @@
       "Bash(npx next *)",
       "Bash(node *)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('exports', {}\\).keys\\(\\)\\)\")",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/compliance/rules/[id]\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/templates/[id]\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/submit-approval\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/approve\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/timesheets\")"
     ]
   },
   "enabledPlugins": {

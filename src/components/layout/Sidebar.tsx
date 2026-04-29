@@ -9,12 +9,14 @@ import {
   Bell,
   Users,
   Settings2,
+  LayoutTemplate,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard",  Icon: LayoutDashboard },
   { href: "/contracts", label: "Contracts",  Icon: FileText },
+  { href: "/templates", label: "Templates",  Icon: LayoutTemplate },
   { href: "/alerts",    label: "Alerts",     Icon: Bell },
   { href: "/team",      label: "Team",       Icon: Users },
   { href: "/settings",  label: "Settings",   Icon: Settings2 },

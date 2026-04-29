@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  ThumbsUp, ThumbsDown, Minus, Activity,
+  ThumbsUp, ThumbsDown, Minus, Activity, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { type Clause } from "@/lib/mock-data";
 import { clauseTypeLabel, daysUntil, formatCurrency } from "@/lib/utils";
@@ -146,6 +146,25 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
                 <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
                   <AlertTriangle size={12} className="mt-0.5 shrink-0" />
                   <span>{clause.riskReason}</span>
+                </div>
+              )}
+
+              {clause.complianceFlags && clause.complianceFlags.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {clause.complianceFlags.map((flag, i) => {
+                    const isError = flag.startsWith("[error]");
+                    return (
+                      <div key={i} className="flex items-center gap-1.5 text-xs">
+                        {isError
+                          ? <ShieldAlert size={11} className="text-red-500 shrink-0" />
+                          : <ShieldCheck size={11} className="text-amber-500 shrink-0" />
+                        }
+                        <span className={isError ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-500"}>
+                          {flag.replace(/^\[(error|warning)\]\s*/, "")}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

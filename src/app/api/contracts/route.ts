@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { dbListContracts, dbPutContract, dbPutActivity } from "@/lib/aws/contracts";
 import { getUploadUrl, contractKey } from "@/lib/aws/s3";
-import type { Contract, ActivityEvent } from "@/lib/mock-data";
+import type { Contract, ActivityEvent, SowType } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,9 @@ export async function POST(request: NextRequest) {
       pageCount?: number;
       contractValue?: number;
       expiryDate?: string;
+      sowType?: SowType;
+      budgetHours?: number;
+      budgetRate?: number;
     };
 
     const now: string = new Date().toISOString();
@@ -55,6 +58,9 @@ export async function POST(request: NextRequest) {
       fileType:      body.fileType,
       pageCount:     body.pageCount ?? 0,
       aiSummary:     null,
+      ...(body.sowType     && { sowType:     body.sowType }),
+      ...(body.budgetHours && { budgetHours: body.budgetHours }),
+      ...(body.budgetRate  && { budgetRate:  body.budgetRate }),
     };
 
     await dbPutContract(session.workspace, contract);

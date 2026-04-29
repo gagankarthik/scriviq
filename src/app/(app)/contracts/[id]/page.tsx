@@ -5,7 +5,7 @@ import {
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
   Activity, GitBranch, CheckSquare,
 } from "lucide-react";
-import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments } from "@/lib/aws/contracts";
+import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { formatCurrency, daysUntil, computeRiskScore } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
@@ -14,6 +14,9 @@ import { ClauseList } from "@/components/domain/ClauseList";
 import { ContractActions } from "@/components/domain/ContractActions";
 import { AmendmentPanel } from "@/components/domain/AmendmentPanel";
 import { ContractEditModal } from "@/components/domain/ContractEditModal";
+import { SowTypeBadge } from "@/components/domain/SowTypeBadge";
+import { ApprovalBanner } from "@/components/domain/ApprovalBanner";
+import { BudgetTracker } from "@/components/domain/BudgetTracker";
 import type { Clause } from "@/lib/mock-data";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -193,10 +196,11 @@ export default async function ContractDetailPage({
   const dbContract = await dbGetContract(workspace, id).catch(() => null);
   if (!dbContract) notFound();
 
-  const [clauses, allAlerts, amendments] = await Promise.all([
+  const [clauses, allAlerts, amendments, approvalSteps] = await Promise.all([
     dbListClauses(workspace, id).catch(() => []),
     dbListAlerts(workspace).catch(() => []),
     dbListAmendments(workspace, id).catch(() => []),
+    dbListApprovals(workspace, id).catch(() => []),
   ]);
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
@@ -240,6 +244,7 @@ export default async function ContractDetailPage({
             <div className="flex items-center gap-2.5 flex-wrap">
               <StatusBadge status={contract.status} />
               {contract.riskScore && <RiskBadgeLarge level={contract.riskScore} />}
+              {contract.sowType && <SowTypeBadge type={contract.sowType} />}
               <span className="text-xs font-mono text-[var(--fg-muted)] bg-[var(--surface-subtle)] border border-[var(--border-subtle)] px-2 py-0.5 rounded uppercase">
                 {contract.fileType}
               </span>
@@ -384,6 +389,17 @@ export default async function ContractDetailPage({
         ))}
       </div>
 
+      {/* Approval banner */}
+      {contract.approvalStatus && contract.approvalStatus !== "draft" && (
+        <ApprovalBanner
+          contractId={id}
+          status={contract.approvalStatus}
+          approvers={contract.approvers}
+          comments={contract.approvalComments}
+          stepId={approvalSteps.find((s) => s.status === "pending")?.id}
+        />
+      )}
+
       {/* Pending amendment alert */}
       {amendments.some((a) => a.status === "pending_review") && (
         <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-950/15">
@@ -436,6 +452,15 @@ export default async function ContractDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Budget tracker (LOE contracts) */}
+          {(contract.budgetHours || contract.sowType === "loe") && (
+            <BudgetTracker
+              contractId={id}
+              budgetHours={contract.budgetHours}
+              budgetRate={contract.budgetRate}
+            />
+          )}
+
           {/* Termination summary */}
           {contract.status === "ready" && <TerminationSummary clauses={clauses} />}
 

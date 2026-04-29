@@ -8,8 +8,9 @@ import {
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
+import { ComplianceRulesPanel } from "./ComplianceRulesPanel";
 
-type Tab = "profile" | "notifications" | "billing";
+type Tab = "profile" | "notifications" | "billing" | "compliance";
 
 export interface SettingsUser  { name: string; email: string }
 export interface SettingsStats {
@@ -247,6 +248,7 @@ export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: Setti
     { value: "profile",       label: "Profile",       Icon: User       },
     { value: "notifications", label: "Notifications", Icon: Bell       },
     { value: "billing",       label: "Billing",       Icon: CreditCard },
+    { value: "compliance",    label: "Compliance",    Icon: Shield     },
   ];
 
   return (
@@ -276,6 +278,7 @@ export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: Setti
       {tab === "profile"       && <ProfilePanel user={user} />}
       {tab === "notifications" && <NotificationsPanel />}
       {tab === "billing"       && <BillingPanel />}
+      {tab === "compliance"    && <ComplianceRulesPanel />}
     </div>
   );
 }
