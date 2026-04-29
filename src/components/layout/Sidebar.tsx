@@ -2,31 +2,60 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  FileText,
+  Bell,
+  Users,
+  Settings2,
+  Zap,
+} from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard",  icon: "▦" },
-  { href: "/contracts", label: "Contracts",  icon: "⊡" },
-  { href: "/alerts",    label: "Alerts",     icon: "◎" },
-  { href: "/team",      label: "Team",       icon: "⊕" },
-  { href: "/settings",  label: "Settings",   icon: "⊙" },
+  { href: "/dashboard", label: "Dashboard",  Icon: LayoutDashboard },
+  { href: "/contracts", label: "Contracts",  Icon: FileText },
+  { href: "/alerts",    label: "Alerts",     Icon: Bell },
+  { href: "/team",      label: "Team",       Icon: Users },
+  { href: "/settings",  label: "Settings",   Icon: Settings2 },
 ];
 
-function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+interface SidebarUser {
+  name:  string;
+  email: string;
+}
+
+function SidebarContent({
+  user,
+  onNavClick,
+}: {
+  user: SidebarUser;
+  onNavClick?: () => void;
+}) {
   const path = usePathname();
+  const initials = getInitials(user.name || "U");
 
   return (
-    <div className="flex flex-col h-full bg-[#0A0F1E] border-r border-slate-800/50">
+    <div className="flex flex-col h-full bg-[var(--surface-base)] border-r border-[var(--border-subtle)]">
       {/* Logo */}
-      <div className="px-5 pt-5 pb-4 border-b border-slate-800/40">
+      <div className="px-5 pt-5 pb-4 border-b border-[var(--border-subtle)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0"
+            className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0"
             style={{ boxShadow: "0 0 14px rgb(79 70 229 / 0.45)" }}
           >
-            C
+            <Zap size={16} strokeWidth={2.5} />
           </div>
-          <span className="text-white font-semibold tracking-tight text-[15px]">
+          <span className="text-[var(--fg-primary)] font-bold tracking-tight text-[15px]">
             scriviq
           </span>
         </Link>
@@ -34,7 +63,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, label, icon }) => {
+        {NAV_ITEMS.map(({ href, label, Icon }) => {
           const active =
             path === href || (href !== "/dashboard" && path.startsWith(href));
           return (
@@ -44,28 +73,44 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
-                  ? "bg-indigo-600/15 text-indigo-300 border border-indigo-500/20"
-                  : "text-slate-500 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent"
+                  ? "bg-indigo-600/15 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20"
+                  : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)] border border-transparent"
               }`}
             >
-              <span className="text-base w-5 text-center shrink-0">{icon}</span>
+              <Icon size={16} strokeWidth={1.75} className="shrink-0" />
               {label}
             </Link>
           );
         })}
       </nav>
 
+      {/* Workspace badge */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-subtle)] px-3 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fg-muted)] mb-0.5">
+            Workspace
+          </p>
+          <p className="text-xs font-medium text-[var(--fg-secondary)] truncate">
+            scriviq Agency
+          </p>
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-indigo-600/15 text-indigo-400 dark:text-indigo-300 border border-indigo-500/25">
+            <span className="w-1 h-1 rounded-full bg-indigo-500" />
+            Pro Plan
+          </span>
+        </div>
+      </div>
+
       {/* User */}
-      <div className="px-4 py-4 border-t border-slate-800/40">
+      <div className="px-4 py-4 border-t border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-950/80 border border-indigo-800/50 flex items-center justify-center text-indigo-400 text-xs font-semibold shrink-0">
-            GK
+          <div className="w-8 h-8 rounded-full bg-indigo-600/10 border border-indigo-500/25 flex items-center justify-center text-indigo-500 dark:text-indigo-400 text-xs font-semibold shrink-0">
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">
-              Gagan Karthik
+            <p className="text-sm font-medium text-[var(--fg-primary)] truncate">
+              {user.name}
             </p>
-            <p className="text-xs text-slate-500 truncate">Pro Plan · 14d trial</p>
+            <p className="text-xs text-[var(--fg-muted)] truncate">{user.email}</p>
           </div>
         </div>
       </div>
@@ -73,17 +118,17 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: SidebarUser }) {
   const { isOpen, close } = useSidebar();
 
   return (
     <>
       {/* Desktop sidebar */}
       <div className="hidden lg:flex w-64 shrink-0 flex-col h-screen sticky top-0">
-        <SidebarContent />
+        <SidebarContent user={user} />
       </div>
 
-      {/* Mobile drawer backdrop */}
+      {/* Mobile backdrop */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 lg:hidden"
@@ -98,7 +143,7 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <SidebarContent onNavClick={close} />
+        <SidebarContent user={user} onNavClick={close} />
       </div>
     </>
   );

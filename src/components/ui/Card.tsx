@@ -1,17 +1,19 @@
 import { type ReactNode } from "react";
 
 interface CardProps {
-  children: ReactNode;
+  children:   ReactNode;
   className?: string;
-  padding?: string;
-  hover?: boolean;
+  padding?:   string;
+  hover?:     boolean;
 }
 
 export function Card({ children, className = "", padding = "p-5", hover }: CardProps) {
   return (
     <div
-      className={`rounded-2xl border border-slate-800/60 bg-slate-900/20 ${padding} ${
-        hover ? "hover:bg-slate-900/50 hover:border-slate-700/60 transition-all duration-200" : ""
+      className={`rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] ${padding} ${
+        hover
+          ? "hover:border-indigo-500/20 hover:shadow-md transition-all duration-200"
+          : ""
       } ${className}`}
     >
       {children}

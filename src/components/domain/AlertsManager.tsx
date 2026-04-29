@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { type Alert, type AlertType, type AlertStatus } from "@/lib/mock-data";
 import { AlertRow } from "./AlertRow";
 
@@ -24,52 +25,50 @@ interface AlertsManagerProps {
 
 export function AlertsManager({ initialAlerts }: AlertsManagerProps) {
   const [statusFilter, setStatusFilter] = useState<"" | AlertStatus>("");
-  const [overrides, setOverrides] = useState<Map<string, AlertStatus>>(new Map());
+  const [overrides,    setOverrides]    = useState<Map<string, AlertStatus>>(new Map());
 
   const alerts = initialAlerts.map((a) =>
     overrides.has(a.id) ? { ...a, status: overrides.get(a.id)! } : a
   );
 
-  function dismiss(id: string) {
-    setOverrides((prev) => new Map([...prev, [id, "dismissed" as AlertStatus]]));
+  async function dismiss(id: string) {
+    setOverrides((prev) => new Map([...prev, [id, "dismissed"]]));
+    // Persist to API
+    await fetch("/api/alerts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: "dismissed" }),
+    }).catch(() => {});
   }
 
-  const filtered = alerts.filter((a) => !statusFilter || a.status === statusFilter);
+  const filtered  = alerts.filter((a) => !statusFilter || a.status === statusFilter);
+  const grouped   = TYPE_ORDER.reduce((acc, type) => {
+    acc[type] = filtered.filter((a) => a.type === type);
+    return acc;
+  }, {} as Record<AlertType, Alert[]>);
 
-  // Group by type
-  const grouped = TYPE_ORDER.reduce(
-    (acc, type) => {
-      acc[type] = filtered.filter((a) => a.type === type);
-      return acc;
-    },
-    {} as Record<AlertType, Alert[]>
-  );
-
-  const total = alerts.length;
   const overdue = alerts.filter((a) => a.type === "overdue" && a.status !== "dismissed").length;
   const pending = alerts.filter((a) => a.status === "pending").length;
+  const total   = alerts.length;
 
   return (
     <div className="space-y-6">
-      {/* Summary bar */}
+      {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Overdue", value: overdue, color: "text-red-400", border: "border-l-red-500" },
-          { label: "Pending", value: pending, color: "text-amber-400", border: "border-l-amber-500" },
-          { label: "Total",   value: total,   color: "text-slate-300", border: "border-l-slate-700" },
+          { label: "Overdue", value: overdue, color: "text-red-600 dark:text-red-400",   border: "border-l-red-500"   },
+          { label: "Pending", value: pending, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
+          { label: "Total",   value: total,   color: "text-[var(--fg-primary)]",           border: "border-l-[var(--border-color)]" },
         ].map(({ label, value, color, border }) => (
-          <div
-            key={label}
-            className={`rounded-xl border border-slate-800/50 bg-slate-900/20 p-4 border-l-2 ${border}`}
-          >
-            <p className="text-[10px] uppercase tracking-wider text-slate-600 mb-1">{label}</p>
-            <p className={`text-2xl font-semibold font-mono ${color}`}>{value}</p>
+          <div key={label} className={`rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2 ${border}`}>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-1 font-semibold">{label}</p>
+            <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1 rounded-xl bg-slate-900/50 border border-slate-800/50 p-1 w-fit">
+      {/* Filters */}
+      <div className="flex items-center gap-1 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-color)] p-1 w-fit">
         {FILTER_TABS.map((t) => (
           <button
             key={t.value}
@@ -77,7 +76,7 @@ export function AlertsManager({ initialAlerts }: AlertsManagerProps) {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
               statusFilter === t.value
                 ? "bg-indigo-600 text-white"
-                : "text-slate-400 hover:text-slate-200"
+                : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
             }`}
           >
             {t.label}
@@ -85,17 +84,17 @@ export function AlertsManager({ initialAlerts }: AlertsManagerProps) {
         ))}
       </div>
 
-      {/* Grouped alerts */}
+      {/* Grouped */}
       {TYPE_ORDER.map((type) => {
         const group = grouped[type];
-        if (group.length === 0) return null;
+        if (!group.length) return null;
         return (
           <div key={type}>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">
                 {TYPE_LABELS[type]}
               </h3>
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-mono font-bold">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-subtle)] border border-[var(--border-color)] text-[var(--fg-muted)] text-[10px] font-mono font-bold">
                 {group.length}
               </span>
             </div>
@@ -109,10 +108,12 @@ export function AlertsManager({ initialAlerts }: AlertsManagerProps) {
       })}
 
       {filtered.length === 0 && (
-        <div className="rounded-2xl border border-slate-800/40 bg-slate-900/10 py-16 text-center">
-          <p className="text-2xl mb-3">✓</p>
-          <p className="text-slate-300 font-medium mb-1">No alerts to show</p>
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] py-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 size={22} className="text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="text-[var(--fg-primary)] font-semibold mb-1">No alerts to show</p>
+          <p className="text-sm text-[var(--fg-muted)]">
             {statusFilter ? `No ${statusFilter} alerts found.` : "All clear — no active alerts."}
           </p>
         </div>

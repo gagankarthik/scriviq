@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Bell, CheckCircle2 } from "lucide-react";
 import { type Alert } from "@/lib/mock-data";
 import { AlertRow } from "./AlertRow";
 
@@ -18,26 +19,27 @@ export function AlertsWidget({ alerts: initialAlerts }: AlertsWidgetProps) {
   const active = alerts.filter((a) => a.status !== "dismissed");
 
   return (
-    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/20 overflow-hidden">
+    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/40">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2.5">
-          <h2 className="text-sm font-semibold text-slate-100">Active Alerts</h2>
+          <Bell size={14} className="text-[var(--fg-muted)]" />
+          <h2 className="text-sm font-semibold text-[var(--fg-primary)]">Active Alerts</h2>
           {active.length > 0 && (
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold font-mono border border-amber-800/40">
+            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-200 dark:border-amber-800/40">
               {active.length}
             </span>
           )}
         </div>
         <Link
           href="/alerts"
-          className="text-xs text-indigo-400 hover:underline"
+          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
         >
           View all →
         </Link>
       </div>
 
-      {/* Alert list */}
+      {/* List */}
       <div className="p-4 space-y-2">
         {alerts.slice(0, 5).map((alert) => (
           <AlertRow
@@ -47,9 +49,12 @@ export function AlertsWidget({ alerts: initialAlerts }: AlertsWidgetProps) {
           />
         ))}
         {alerts.length === 0 && (
-          <div className="py-8 text-center">
-            <p className="text-2xl mb-2">✓</p>
-            <p className="text-sm text-slate-400">All clear — no active alerts</p>
+          <div className="py-10 text-center">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-sm font-medium text-[var(--fg-primary)]">All clear</p>
+            <p className="text-xs text-[var(--fg-muted)] mt-1">No active alerts</p>
           </div>
         )}
       </div>

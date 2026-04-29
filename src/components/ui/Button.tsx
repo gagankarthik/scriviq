@@ -10,11 +10,11 @@ const variantStyles: Record<Variant, string> = {
   primary:
     "bg-indigo-600 hover:bg-indigo-500 text-white",
   ghost:
-    "border border-slate-700/80 text-slate-300 hover:text-white hover:border-slate-500 bg-transparent",
+    "border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:border-[var(--border-color)] bg-transparent",
   secondary:
-    "bg-slate-800/60 hover:bg-slate-700/60 text-slate-200 border border-slate-700/40",
+    "bg-[var(--surface-subtle)] hover:bg-[var(--surface-base)] text-[var(--fg-secondary)] border border-[var(--border-color)]",
   danger:
-    "bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-800/40",
+    "bg-red-50 dark:bg-red-600/10 hover:bg-red-100 dark:hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40",
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -24,26 +24,26 @@ const sizeStyles: Record<Size, string> = {
 };
 
 interface ButtonProps {
-  variant?: Variant;
-  size?: Size;
-  href?: string;
-  loading?: boolean;
+  variant?:  Variant;
+  size?:     Size;
+  href?:     string;
+  loading?:  boolean;
   disabled?: boolean;
-  onClick?: () => void;
-  type?: "button" | "submit" | "reset";
-  className?: string;
-  children: ReactNode;
-  glow?: boolean;
+  onClick?:  () => void;
+  type?:     "button" | "submit" | "reset";
+  className?:string;
+  children:  ReactNode;
+  glow?:     boolean;
 }
 
 export function Button({
   variant = "primary",
-  size = "md",
+  size    = "md",
   href,
   loading,
   disabled,
   onClick,
-  type = "button",
+  type     = "button",
   className = "",
   children,
   glow,
@@ -62,9 +62,7 @@ export function Button({
       <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
       {children}
     </>
-  ) : (
-    children
-  );
+  ) : children;
 
   if (href && !disabled && !loading) {
     return (
