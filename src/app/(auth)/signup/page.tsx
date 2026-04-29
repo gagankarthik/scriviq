@@ -28,10 +28,10 @@ export default function SignupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: form.email,
+          email:    form.email,
           password: form.password,
-          name: form.name,
-          company: form.company,
+          name:     form.name,
+          company:  form.company,
         }),
       });
 
@@ -42,7 +42,17 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/dashboard");
+      // Stash password in sessionStorage so the verify page can auto-login.
+      // Cleared automatically when the verify flow completes or the tab closes.
+      try {
+        sessionStorage.setItem("scriviq:pending-password", form.password);
+        sessionStorage.setItem("scriviq:pending-email",    data.email);
+      } catch {
+        // sessionStorage may be unavailable in private mode — verify page
+        // will fall back to asking the user to sign in after confirmation.
+      }
+
+      router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     } catch {
       setError("Network error. Please check your connection.");
     } finally {

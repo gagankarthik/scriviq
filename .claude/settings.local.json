@@ -22,7 +22,8 @@
       "PowerShell(Stop-Process *)",
       "Bash(npx next *)",
       "Bash(node *)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('exports', {}\\).keys\\(\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('exports', {}\\).keys\\(\\)\\)\")",
+      "Bash(npx eslint *)"
     ]
   },
   "enabledPlugins": {

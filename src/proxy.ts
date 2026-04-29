@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC  = ["/", "/login", "/signup", "/api/auth"];
+const PUBLIC  = ["/", "/login", "/signup", "/verify", "/api/auth"];
 const SKIP_RE = /^\/((_next|_vercel|favicon\.ico|.*\.(png|svg|ico|woff2|webp))).*/;
 
 export function proxy(request: NextRequest) {
@@ -19,7 +19,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (hasToken && (pathname === "/login" || pathname === "/signup")) {
+  if (hasToken && (pathname === "/login" || pathname === "/signup" || pathname === "/verify")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
