@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FileText, FileType2, AlertCircle, Loader2, ChevronRight } from "lucide-react";
-import { type Contract, daysUntil, formatCurrency } from "@/lib/mock-data";
+import { type Contract } from "@/lib/mock-data";
+import { daysUntil, formatCurrency } from "@/lib/utils";
 import { RiskBadge } from "./RiskBadge";
 
 function StatusPill({ status }: { status: Contract["status"] }) {

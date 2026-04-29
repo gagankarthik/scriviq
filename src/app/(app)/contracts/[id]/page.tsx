@@ -3,13 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2, Calendar, DollarSign, Shield } from "lucide-react";
 import { dbGetContract, dbListClauses, dbListAlerts } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
-import {
-  getContractById,
-  getContractClauses,
-  ALERTS,
-  formatCurrency,
-  daysUntil,
-} from "@/lib/mock-data";
+import { formatCurrency, daysUntil } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
 import { ClauseList } from "@/components/domain/ClauseList";
 
@@ -48,27 +42,15 @@ export default async function ContractDetailPage({
   const session = await getSession();
   const workspace = session?.workspace ?? "";
 
-  let contract, clauses, contractAlerts;
+  const dbContract = await dbGetContract(workspace, id).catch(() => null);
+  if (!dbContract) notFound();
 
-  try {
-    const [c, cl, al] = await Promise.all([
-      dbGetContract(workspace, id),
-      dbListClauses(workspace, id),
-      dbListAlerts(workspace),
-    ]);
-    if (!c) throw new Error("not found");
-    contract       = c;
-    clauses        = cl;
-    contractAlerts = al.filter((a) => a.contractId === id && a.status !== "dismissed");
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message === "not found") notFound();
-    // Fallback to mock data
-    const c = getContractById(id);
-    if (!c) notFound();
-    contract       = c;
-    clauses        = getContractClauses(id);
-    contractAlerts = ALERTS.filter((a) => a.contractId === id && a.status !== "dismissed");
-  }
+  const [clauses, allAlerts] = await Promise.all([
+    dbListClauses(workspace, id).catch(() => []),
+    dbListAlerts(workspace).catch(() => []),
+  ]);
+  const contract       = dbContract;
+  const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
 
   const days      = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
   const highRisk  = clauses.filter((c) => c.riskLevel === "high");
@@ -78,7 +60,7 @@ export default async function ContractDetailPage({
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-[var(--fg-muted)] font-mono">
-        <Link href="/contracts" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+        <Link href="/contracts" className="hover:text-[#0072E5] dark:hover:text-[#75D8FC] transition-colors">
           Contracts
         </Link>
         <span>/</span>

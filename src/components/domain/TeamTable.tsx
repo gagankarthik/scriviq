@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { UserPlus, Mail } from "lucide-react";
-import { type TeamMember, type TeamRole, relativeTime } from "@/lib/mock-data";
+import { type TeamMember, type TeamRole } from "@/lib/mock-data";
+import { relativeTime } from "@/lib/utils";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-const ROLE_COLORS: Record<TeamRole, string> = {
-  owner:  "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50",
-  admin:  "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-  member: "bg-[var(--surface-subtle)] text-[var(--fg-secondary)] border-[var(--border-color)]",
+const ROLE_STYLES: Record<TeamRole, { bg: string; color: string; border: string }> = {
+  owner:  { bg: "rgba(0,114,229,0.08)",     color: "#0072E5",  border: "rgba(0,114,229,0.25)"  },
+  admin:  { bg: "rgba(245,158,11,0.08)",    color: "#d97706",  border: "rgba(245,158,11,0.25)" },
+  member: { bg: "var(--surface-subtle)",    color: "var(--fg-secondary)", border: "var(--border-color)" },
 };
 
 interface TeamTableProps {
@@ -50,7 +51,13 @@ export function TeamTable({ members }: TeamTableProps) {
 
       {/* Invite form */}
       {showInvite && (
-        <div className="rounded-2xl border border-indigo-200 dark:border-indigo-800/30 bg-indigo-50 dark:bg-indigo-950/20 p-5">
+        <div
+          className="rounded-2xl p-5"
+          style={{
+            background: "rgba(0,114,229,0.04)",
+            border: "1px solid rgba(0,114,229,0.2)",
+          }}
+        >
           <h3 className="text-sm font-semibold text-[var(--fg-primary)] mb-4">
             Invite a team member
           </h3>
@@ -91,54 +98,69 @@ export function TeamTable({ members }: TeamTableProps) {
       )}
 
       {/* Table */}
-      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] overflow-hidden">
-        <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto_auto] gap-4 px-5 py-3 border-b border-[var(--border-subtle)] text-[10px] uppercase tracking-wider font-semibold text-[var(--fg-muted)]">
-          <span>Member</span>
-          <span>Email</span>
-          <span>Role</span>
-          <span>Last active</span>
-          <span />
-        </div>
+      {members.length > 0 ? (
+        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] overflow-hidden">
+          <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto_auto] gap-4 px-5 py-3 border-b border-[var(--border-subtle)] text-[10px] uppercase tracking-wider font-semibold text-[var(--fg-muted)]">
+            <span>Member</span>
+            <span>Email</span>
+            <span>Role</span>
+            <span>Last active</span>
+            <span />
+          </div>
 
-        <div className="divide-y divide-[var(--border-subtle)]">
-          {members.map((member) => (
-            <div
-              key={member.id}
-              className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-center gap-3 sm:gap-4 px-5 py-4 hover:bg-[var(--surface-subtle)] transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 text-xs font-bold shrink-0">
-                  {member.initials}
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {members.map((member) => {
+              const rs = ROLE_STYLES[member.role];
+              return (
+                <div
+                  key={member.id}
+                  className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-center gap-3 sm:gap-4 px-5 py-4 hover:bg-[var(--surface-subtle)] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: "rgba(0,114,229,0.1)", color: "#0072E5", border: "1px solid rgba(0,114,229,0.2)" }}
+                    >
+                      {member.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--fg-primary)]">{member.name}</p>
+                      <p className="text-[10px] text-[var(--fg-muted)] sm:hidden">{member.email}</p>
+                    </div>
+                  </div>
+
+                  <p className="hidden sm:block text-sm text-[var(--fg-secondary)] truncate">
+                    {member.email}
+                  </p>
+
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider border w-fit"
+                    style={{ background: rs.bg, color: rs.color, borderColor: rs.border }}
+                  >
+                    {member.role}
+                  </span>
+
+                  <p className="text-xs text-[var(--fg-muted)] font-mono">
+                    {relativeTime(member.lastActiveAt)}
+                  </p>
+
+                  {member.role !== "owner" ? (
+                    <button className="text-xs text-[var(--fg-muted)] hover:text-red-500 dark:hover:text-red-400 transition-colors text-left sm:text-right">
+                      Remove
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--fg-primary)]">{member.name}</p>
-                  <p className="text-[10px] text-[var(--fg-muted)] sm:hidden">{member.email}</p>
-                </div>
-              </div>
-
-              <p className="hidden sm:block text-sm text-[var(--fg-secondary)] truncate">
-                {member.email}
-              </p>
-
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider border w-fit ${ROLE_COLORS[member.role]}`}>
-                {member.role}
-              </span>
-
-              <p className="text-xs text-[var(--fg-muted)] font-mono">
-                {relativeTime(member.lastActiveAt)}
-              </p>
-
-              {member.role !== "owner" ? (
-                <button className="text-xs text-[var(--fg-muted)] hover:text-red-500 dark:hover:text-red-400 transition-colors text-left sm:text-right">
-                  Remove
-                </button>
-              ) : (
-                <span />
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] py-12 text-center">
+          <p className="text-sm text-[var(--fg-muted)]">No team members yet. Invite someone to get started.</p>
+        </div>
+      )}
     </div>
   );
 }

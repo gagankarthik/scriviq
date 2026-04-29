@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { Upload, FileText } from "lucide-react";
-import { CONTRACTS } from "@/lib/mock-data";
 import { dbListContracts } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { ContractCard } from "@/components/domain/ContractCard";
@@ -16,9 +15,9 @@ export default async function ContractsPage({
   const session = await getSession();
   const workspace = session?.workspace ?? "";
 
-  let contracts;
-  let total;
-  let readyCount;
+  let contracts: Awaited<ReturnType<typeof dbListContracts>> = [];
+  let total      = 0;
+  let readyCount = 0;
 
   try {
     const [filtered, all] = await Promise.all([
@@ -28,19 +27,8 @@ export default async function ContractsPage({
     contracts  = filtered;
     total      = all.length;
     readyCount = all.filter((c) => c.status === "ready").length;
-    if (!all.length) throw new Error("empty");
   } catch {
-    contracts  = CONTRACTS.filter((c) => {
-      if (status && c.status !== status) return false;
-      if (risk && c.riskScore !== risk) return false;
-      if (q) {
-        const qLower = q.toLowerCase();
-        return c.title.toLowerCase().includes(qLower) || c.clientName.toLowerCase().includes(qLower);
-      }
-      return true;
-    });
-    total      = CONTRACTS.length;
-    readyCount = CONTRACTS.filter((c) => c.status === "ready").length;
+    // DB unavailable — show empty state
   }
 
   const hasFilters = !!(status || risk || q);

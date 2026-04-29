@@ -1,9 +1,31 @@
-﻿import { Users, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import Link from "next/link";
-import { TEAM_MEMBERS } from "@/lib/mock-data";
+import { getSession } from "@/lib/auth/session";
+import { type TeamMember } from "@/lib/mock-data";
 import { TeamTable } from "@/components/domain/TeamTable";
 
-export default function TeamPage() {
+export default async function TeamPage() {
+  const session = await getSession();
+
+  const members: TeamMember[] = session
+    ? [
+        {
+          id:           session.userId ?? "me",
+          name:         session.name,
+          email:        session.email,
+          role:         "owner",
+          initials:     session.name
+            .split(" ")
+            .map((p: string) => p[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase(),
+          joinedAt:     new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+        },
+      ]
+    : [];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
@@ -13,22 +35,26 @@ export default function TeamPage() {
         </p>
       </div>
 
-      {/* Plan badge */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-[rgba(0,114,229,0.04)] dark:bg-[rgba(0,114,229,0.08)] border border-[rgba(0,114,229,0.2)] dark:border-[rgba(0,114,229,0.2)]">
+      <div
+        className="flex items-start gap-3 p-4 rounded-xl"
+        style={{
+          background: "rgba(0,114,229,0.04)",
+          border: "1px solid rgba(0,114,229,0.2)",
+        }}
+      >
         <Shield size={16} className="text-[#0072E5] dark:text-[#75D8FC] mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-[var(--fg-primary)]">Pro Plan Â· 14-day trial</p>
+          <p className="text-sm font-semibold text-[var(--fg-primary)]">Pro Plan · 14-day trial</p>
           <p className="text-xs text-[var(--fg-muted)] mt-0.5">
             Your plan includes unlimited team members.{" "}
             <Link href="/settings" className="text-[#0072E5] dark:text-[#75D8FC] hover:underline">
-              Manage billing â†’
+              Manage billing →
             </Link>
           </p>
         </div>
       </div>
 
-      <TeamTable members={TEAM_MEMBERS} />
+      <TeamTable members={members} />
     </div>
   );
 }
-

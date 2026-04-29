@@ -1,14 +1,12 @@
-import { ALERTS } from "@/lib/mock-data";
 import { dbListAlerts } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { AlertsManager } from "@/components/domain/AlertsManager";
 
 async function getAlerts(workspace: string) {
   try {
-    const alerts = await dbListAlerts(workspace);
-    return alerts;
+    return await dbListAlerts(workspace);
   } catch {
-    return ALERTS;
+    return [];
   }
 }
 

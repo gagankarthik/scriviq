@@ -1,47 +1,39 @@
 import { TrendingUp, FileCheck2, ShieldAlert, Clock } from "lucide-react";
-import { formatCurrency } from "@/lib/mock-data";
+import { formatCurrency } from "@/lib/utils";
+
+type Accent = "brand" | "amber" | "red" | "emerald";
 
 interface Stat {
   label:   string;
   value:   string;
   sub?:    string;
-  accent?: "indigo" | "amber" | "red" | "emerald";
+  accent?: Accent;
   Icon:    React.ElementType;
 }
 
-const accentBorder: Record<NonNullable<Stat["accent"]>, string> = {
-  indigo:  "border-l-indigo-500",
-  amber:   "border-l-amber-500",
-  red:     "border-l-red-500",
-  emerald: "border-l-emerald-500",
+const accentStyles: Record<Accent, { border: string; text: string; iconBg: string; iconColor: string }> = {
+  brand:   { border: "border-l-[#0072E5]",    text: "text-[#0072E5] dark:text-[#75D8FC]",          iconBg: "rgba(0,114,229,0.1)",    iconColor: "#0072E5" },
+  amber:   { border: "border-l-amber-500",     text: "text-amber-600 dark:text-amber-400",           iconBg: "rgba(245,158,11,0.1)",   iconColor: "#d97706" },
+  red:     { border: "border-l-red-500",       text: "text-red-600 dark:text-red-400",               iconBg: "rgba(239,68,68,0.1)",    iconColor: "#dc2626" },
+  emerald: { border: "border-l-emerald-500",   text: "text-emerald-600 dark:text-emerald-400",       iconBg: "rgba(16,185,129,0.1)",   iconColor: "#059669" },
 };
 
-const accentText: Record<NonNullable<Stat["accent"]>, string> = {
-  indigo:  "text-indigo-600 dark:text-indigo-400",
-  amber:   "text-amber-600 dark:text-amber-400",
-  red:     "text-red-600 dark:text-red-400",
-  emerald: "text-emerald-600 dark:text-emerald-400",
-};
-
-const accentBg: Record<NonNullable<Stat["accent"]>, string> = {
-  indigo:  "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400",
-  amber:   "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400",
-  red:     "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
-  emerald: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400",
-};
-
-function StatCard({ label, value, sub, accent = "indigo", Icon }: Stat) {
+function StatCard({ label, value, sub, accent = "brand", Icon }: Stat) {
+  const s = accentStyles[accent];
   return (
-    <div className={`rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5 border-l-2 ${accentBorder[accent]} hover:shadow-md transition-shadow`}>
+    <div className={`rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5 border-l-2 ${s.border} hover:shadow-md transition-shadow`}>
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs text-[var(--fg-muted)] uppercase tracking-wider font-semibold">
           {label}
         </p>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${accentBg[accent]}`}>
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: s.iconBg, color: s.iconColor }}
+        >
           <Icon size={14} strokeWidth={2} />
         </div>
       </div>
-      <p className={`text-2xl font-bold font-mono tracking-tight ${accentText[accent]}`}>
+      <p className={`text-2xl font-bold font-mono tracking-tight ${s.text}`}>
         {value}
       </p>
       {sub && (
@@ -70,7 +62,7 @@ export function StatsBar({
         label="Portfolio Value"
         value={formatCurrency(totalValue)}
         sub="Active contracts"
-        accent="indigo"
+        accent="brand"
         Icon={TrendingUp}
       />
       <StatCard

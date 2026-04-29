@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
-import { type Clause, clauseTypeLabel, daysUntil, formatCurrency } from "@/lib/mock-data";
+import { type Clause } from "@/lib/mock-data";
+import { clauseTypeLabel, daysUntil, formatCurrency } from "@/lib/utils";
 import { RiskBadge } from "./RiskBadge";
 
 interface ClauseRowProps {

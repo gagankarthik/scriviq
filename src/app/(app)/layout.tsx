@@ -4,14 +4,13 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
 import { getSession } from "@/lib/auth/session";
 import { dbListAlerts } from "@/lib/aws/contracts";
-import { getPendingAlerts } from "@/lib/mock-data";
 
 async function getPendingCount(workspace: string): Promise<number> {
   try {
     const alerts = await dbListAlerts(workspace, { status: "pending" });
     return alerts.length;
   } catch {
-    return getPendingAlerts().length;
+    return 0;
   }
 }
 

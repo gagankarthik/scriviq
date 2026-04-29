@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { AlertTriangle, Clock, CheckCircle2, X } from "lucide-react";
-import { type Alert, clauseTypeLabel, daysUntil } from "@/lib/mock-data";
+import { type Alert } from "@/lib/mock-data";
+import { clauseTypeLabel, daysUntil } from "@/lib/utils";
 
 const TYPE_CONFIG = {
   overdue: {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Upload, CheckCircle2, Bell, FileText, UserPlus, Activity } from "lucide-react";
-import { type ActivityEvent, relativeTime } from "@/lib/mock-data";
+import { type ActivityEvent } from "@/lib/mock-data";
+import { relativeTime } from "@/lib/utils";
 
 const EVENT_CONFIG: Record<ActivityEvent["type"], { Icon: React.ElementType; color: string }> = {
   contract_uploaded:   { Icon: Upload,       color: "bg-[rgba(0,114,229,0.1)] text-[#75D8FC] border-[rgba(0,114,229,0.2)]" },
