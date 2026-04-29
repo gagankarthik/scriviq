@@ -73,8 +73,16 @@ function Section({ id, icon: Icon, title, count, children, color = "#0072E5" }: 
 // ── Financial summary ─────────────────────────────────────────────────────────
 
 function FinancialSection({ contract, clauses }: { contract: Contract; clauses: Clause[] }) {
-  const milestones = clauses
-    .filter((c) => c.type === "payment_milestone")
+  const allMilestones = clauses.filter((c) => c.type === "payment_milestone");
+  const grossSum = allMilestones.reduce((s, c) => s + (c.amount ?? 0), 0);
+
+  // Drop any clause whose amount ≈ sum of all other milestones (it's a "Total" summary line)
+  const milestones = allMilestones
+    .filter((c) => {
+      if (!c.amount || grossSum <= 0) return true;
+      const othersSum = grossSum - c.amount;
+      return !(othersSum > 0 && Math.abs(c.amount - othersSum) / othersSum < 0.02);
+    })
     .sort((a, b) => {
       if (!a.dueDate || !b.dueDate) return 0;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();

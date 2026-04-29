@@ -74,6 +74,7 @@ LOW risk:
 6. noticeDays: convert to integer days (e.g. "30 days" → 30, "2 weeks" → 14)
 7. For payment_milestone clauses: always try to extract both amount AND dueDate
 8. Never assign riskLevel "high" or "medium" without a specific riskReason
+9. DO NOT extract a "Total Contract Payment" or "Total Contract Value" summary line as a payment_milestone — these are just the sum of the individual milestones already extracted. A clause that merely states the overall contract total is not a payment obligation and must be type "other" if extracted at all.
 
 ━━━ OUTPUT FORMAT ━━━
 Return ONLY a JSON object: { "clauses": [ ... ] }
@@ -261,11 +262,17 @@ export async function extractAndSaveClauses(
   const riskScore: RiskLevel = score >= 67 ? "high" : score >= 34 ? "medium" : "low";
 
   // Build a meaningful AI summary
-  const highClauses   = clauses.filter((cl) => cl.riskLevel === "high");
-  const paymentTotal  = clauses
-    .filter((cl) => cl.type === "payment_milestone")
-    .reduce((s, cl) => s + (cl.amount ?? 0), 0);
-  const paymentCount  = clauses.filter((cl) => cl.type === "payment_milestone").length;
+  const highClauses    = clauses.filter((cl) => cl.riskLevel === "high");
+  const allPayments    = clauses.filter((cl) => cl.type === "payment_milestone");
+  const grossPayments  = allPayments.reduce((s, cl) => s + (cl.amount ?? 0), 0);
+  // Exclude any "Total" summary clause whose amount ≈ sum of all other milestones
+  const realPayments   = allPayments.filter((cl) => {
+    if (!cl.amount || grossPayments <= 0) return true;
+    const othersSum = grossPayments - cl.amount;
+    return !(othersSum > 0 && Math.abs(cl.amount - othersSum) / othersSum < 0.02);
+  });
+  const paymentTotal  = realPayments.reduce((s, cl) => s + (cl.amount ?? 0), 0);
+  const paymentCount  = realPayments.length;
 
   let aiSummary = `${clauses.length} clause${clauses.length !== 1 ? "s" : ""} extracted`;
   if (paymentCount > 0 && paymentTotal > 0) {

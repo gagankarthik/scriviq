@@ -408,10 +408,11 @@ export function ContractUploader() {
     await new Promise((r) => setTimeout(r, 700));
 
     setStg("extracting");
+    const extractForm = new FormData();
+    extractForm.append("file", f, f.name);
     await fetch(`/api/contracts/${contractId}/extract`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: "" }),
+      body: extractForm,
     }).catch(() => {});
 
     setStg("analyzing");
@@ -725,7 +726,7 @@ export function ContractUploader() {
                 }
               </Button>
               <p className="text-xs text-[var(--fg-muted)] mt-2 text-center">
-                GPT-4o-mini extracts clauses in ~15s per document
+                GPT-4o extracts clauses in ~30s per document
               </p>
             </div>
 
