@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "setup:cognito": "node scripts/setup-cognito.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1038.0",

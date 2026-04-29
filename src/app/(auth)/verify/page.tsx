@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Mail, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -24,7 +24,7 @@ function VerifyInner() {
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Pull pending email from sessionStorage if not in the URL
+  // Pull email from sessionStorage if missing from URL
   useEffect(() => {
     if (!email) {
       try {
@@ -32,31 +32,82 @@ function VerifyInner() {
         if (stored) setEmail(stored);
       } catch {}
     }
-    // Focus the first digit on mount
     inputRefs.current[0]?.focus();
-  }, [email]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Resend cooldown ticker
+  // Countdown ticker for resend cooldown
   useEffect(() => {
     if (resendIn <= 0) return;
     const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [resendIn]);
 
+  const submit = useCallback(
+    async (code: string, currentEmail: string) => {
+      if (!currentEmail) {
+        setError("We need your email to verify. Please try signing up again.");
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      setInfo(null);
+
+      let storedPassword: string | null = null;
+      try {
+        storedPassword = sessionStorage.getItem("scriviq:pending-password");
+      } catch {}
+
+      try {
+        const res = await fetch("/api/auth/verify", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: currentEmail,
+            code,
+            ...(storedPassword ? { password: storedPassword } : {}),
+          }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error ?? "Verification failed. Please try again.");
+          return;
+        }
+
+        try {
+          sessionStorage.removeItem("scriviq:pending-password");
+          sessionStorage.removeItem("scriviq:pending-email");
+        } catch {}
+
+        if (data.loggedIn) {
+          router.push("/dashboard");
+        } else {
+          router.push(`/login?verified=1&email=${encodeURIComponent(currentEmail)}`);
+        }
+      } catch {
+        setError("Network error. Please check your connection.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router]
+  );
+
   function setDigitAt(idx: number, raw: string) {
-    // Allow paste of a full code into one box
-    if (raw.length > 1) {
-      const next = raw.replace(/\D/g, "").slice(0, CODE_LEN).padEnd(CODE_LEN, "").split("");
-      const filled = Array.from({ length: CODE_LEN }, (_, i) => next[i] ?? "");
+    // Handle paste of full code into any box
+    const digits_only = raw.replace(/\D/g, "");
+    if (digits_only.length > 1) {
+      const filled = Array.from({ length: CODE_LEN }, (_, i) => digits_only[i] ?? "");
       setDigits(filled);
-      const lastIdx = Math.min(raw.replace(/\D/g, "").length, CODE_LEN) - 1;
-      if (lastIdx >= 0) inputRefs.current[lastIdx]?.focus();
+      const focusIdx = Math.min(digits_only.length, CODE_LEN) - 1;
+      inputRefs.current[focusIdx]?.focus();
       return;
     }
-    const ch = raw.replace(/\D/g, "");
+    const ch = digits_only.slice(0, 1);
     setDigits((prev) => {
       const copy = [...prev];
-      copy[idx] = ch;
+      copy[idx]  = ch;
       return copy;
     });
     if (ch && idx < CODE_LEN - 1) {
@@ -68,62 +119,18 @@ function VerifyInner() {
     if (e.key === "Backspace" && !digits[idx] && idx > 0) {
       inputRefs.current[idx - 1]?.focus();
     }
-    if (e.key === "ArrowLeft" && idx > 0) {
-      inputRefs.current[idx - 1]?.focus();
-    }
-    if (e.key === "ArrowRight" && idx < CODE_LEN - 1) {
-      inputRefs.current[idx + 1]?.focus();
-    }
+    if (e.key === "ArrowLeft"  && idx > 0)            inputRefs.current[idx - 1]?.focus();
+    if (e.key === "ArrowRight" && idx < CODE_LEN - 1) inputRefs.current[idx + 1]?.focus();
   }
 
-  async function submit(code: string) {
-    if (!email) {
-      setError("We need your email to verify. Please try signing up again.");
-      return;
+  // Auto-submit when all digits filled — guards against empty email race
+  useEffect(() => {
+    const code = digits.join("");
+    if (code.length === CODE_LEN && email && !loading) {
+      void submit(code, email);
     }
-    setLoading(true);
-    setError(null);
-    setInfo(null);
-
-    let storedPassword: string | null = null;
-    try {
-      storedPassword = sessionStorage.getItem("scriviq:pending-password");
-    } catch {}
-
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          email,
-          code,
-          ...(storedPassword ? { password: storedPassword } : {}),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Verification failed. Please try again.");
-        return;
-      }
-
-      // Clean up sensitive sessionStorage entries
-      try {
-        sessionStorage.removeItem("scriviq:pending-password");
-        sessionStorage.removeItem("scriviq:pending-email");
-      } catch {}
-
-      if (data.loggedIn) {
-        router.push("/dashboard");
-      } else {
-        // Fallback: no password to auto-login (e.g. private mode) — go to login
-        router.push(`/login?verified=1&email=${encodeURIComponent(email)}`);
-      }
-    } catch {
-      setError("Network error. Please check your connection.");
-    } finally {
-      setLoading(false);
-    }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digits, email]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -132,19 +139,10 @@ function VerifyInner() {
       setError(`Please enter all ${CODE_LEN} digits.`);
       return;
     }
-    void submit(code);
+    void submit(code, email);
   }
 
-  // Auto-submit once all 6 digits are entered
-  useEffect(() => {
-    const code = digits.join("");
-    if (code.length === CODE_LEN && !loading && !error) {
-      void submit(code);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [digits]);
-
-  async function resend() {
+  const resend = useCallback(async () => {
     if (!email || resendIn > 0) return;
     setResending(true);
     setError(null);
@@ -161,8 +159,8 @@ function VerifyInner() {
         setError(data.error ?? "Could not resend code.");
         return;
       }
-      setInfo(`A new code was sent to ${data.codeDeliveredTo ?? email}.`);
-      setResendIn(45); // 45-second cooldown
+      setInfo(`New code sent to ${data.codeDeliveredTo ?? email}.`);
+      setResendIn(45);
       setDigits(Array(CODE_LEN).fill(""));
       inputRefs.current[0]?.focus();
     } catch {
@@ -170,9 +168,8 @@ function VerifyInner() {
     } finally {
       setResending(false);
     }
-  }
+  }, [email, resendIn]);
 
-  // Mask email for display
   function maskEmail(e: string) {
     const [local, domain] = e.split("@");
     if (!domain) return e;
@@ -185,12 +182,10 @@ function VerifyInner() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
         <Image src="/logo-icon.svg" alt="scriviq" width={36} height={36} />
-        <span className="text-[var(--fg-primary)] font-bold tracking-tight text-lg">
-          scriviq
-        </span>
+        <span className="text-[var(--fg-primary)] font-bold tracking-tight text-lg">scriviq</span>
       </div>
 
-      {/* Icon header */}
+      {/* Icon */}
       <div
         className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
         style={{
@@ -218,7 +213,8 @@ function VerifyInner() {
         </div>
       )}
       {info && !error && (
-        <div className="mb-4 p-3 rounded-xl flex items-start gap-2 text-sm"
+        <div
+          className="mb-4 p-3 rounded-xl flex items-start gap-2 text-sm"
           style={{
             backgroundColor: "rgba(16,185,129,0.08)",
             border: "1px solid rgba(16,185,129,0.25)",
@@ -231,12 +227,11 @@ function VerifyInner() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* 6-digit code input */}
         <div>
-          <label className="block text-sm font-medium text-[var(--fg-secondary)] mb-2">
+          <label className="block text-sm font-medium text-[var(--fg-secondary)] mb-3">
             Verification code
           </label>
-          <div className="flex gap-2 justify-between">
+          <div className="flex gap-2">
             {digits.map((d, i) => (
               <input
                 key={i}
@@ -248,25 +243,22 @@ function VerifyInner() {
                 value={d}
                 onChange={(e) => setDigitAt(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
-                onFocus={(e) => e.currentTarget.select()}
                 disabled={loading}
-                className="w-full aspect-square rounded-xl text-center text-xl font-mono font-semibold bg-[var(--surface-subtle)] border border-[var(--border-color)] text-[var(--fg-primary)] focus:outline-none transition-colors"
-                style={{
-                  caretColor: "#0072E5",
-                }}
-                onFocusCapture={(e) => {
+                className="flex-1 min-w-0 aspect-square rounded-xl text-center text-xl font-mono font-semibold bg-[var(--surface-subtle)] border border-[var(--border-color)] text-[var(--fg-primary)] focus:outline-none transition-all"
+                onFocus={(e) => {
+                  e.currentTarget.select();
                   e.currentTarget.style.borderColor = "#0072E5";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,114,229,0.15)";
+                  e.currentTarget.style.boxShadow   = "0 0 0 3px rgba(0,114,229,0.15)";
                 }}
-                onBlurCapture={(e) => {
+                onBlur={(e) => {
                   e.currentTarget.style.borderColor = "";
-                  e.currentTarget.style.boxShadow = "";
+                  e.currentTarget.style.boxShadow   = "";
                 }}
               />
             ))}
           </div>
           <p className="text-xs text-[var(--fg-muted)] mt-2">
-            Tip: you can paste the full code into any box.
+            You can paste the full code into any box.
           </p>
         </div>
 
@@ -298,7 +290,7 @@ function VerifyInner() {
           className="inline-flex items-center gap-1 text-[var(--fg-muted)] hover:text-[var(--fg-secondary)] transition-colors"
         >
           <ArrowLeft size={13} />
-          Use a different email
+          Different email
         </Link>
       </div>
     </div>
@@ -307,12 +299,14 @@ function VerifyInner() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={
-      <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
-        <div className="h-4 w-32 bg-[var(--surface-subtle)] rounded animate-pulse mb-6" />
-        <div className="h-12 w-full bg-[var(--surface-subtle)] rounded-xl animate-pulse" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
+          <div className="h-4 w-32 bg-[var(--surface-subtle)] rounded animate-pulse mb-6" />
+          <div className="h-12 w-full bg-[var(--surface-subtle)] rounded-xl animate-pulse" />
+        </div>
+      }
+    >
       <VerifyInner />
     </Suspense>
   );
