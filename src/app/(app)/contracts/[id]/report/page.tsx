@@ -272,7 +272,7 @@ function TimelineSection({ keyDates, clauses }: { keyDates: KeyDate[]; clauses: 
             const ts      = new Date(d.date).getTime();
             const isPast  = ts < now;
             const isNear  = !isPast && ts - now < 7 * 86400000;
-            const s       = DATE_TYPE_STYLE[d.type];
+            const s       = DATE_TYPE_STYLE[d.type] ?? DATE_TYPE_STYLE.milestone;
             // Historical mode: show all as completed steps, not greyed-out
             const showActive = isHistorical || !isPast;
 
