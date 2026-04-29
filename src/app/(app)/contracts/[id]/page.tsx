@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2,
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
-  Activity, GitBranch, CheckSquare,
+  Activity, GitBranch, CheckSquare, BarChart3,
 } from "lucide-react";
 import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
@@ -271,6 +271,17 @@ export default async function ContractDetailPage({
 
           <div className="flex flex-col items-end gap-2 shrink-0 sm:self-start">
             <div className="flex items-center gap-2 flex-wrap justify-end">
+              {contract.status === "ready" && clauses.length > 0 && (
+                <Link
+                  href={`/contracts/${id}/report`}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+                  style={{ backgroundColor: "rgba(0,114,229,0.1)", color: "#0072E5", border: "1px solid rgba(0,114,229,0.25)" }}
+                >
+                  <BarChart3 size={14} />
+                  <span className="hidden sm:inline">View Report</span>
+                  <span className="sm:hidden">Report</span>
+                </Link>
+              )}
               <ContractEditModal
                 contractId={id}
                 initial={{
@@ -282,7 +293,7 @@ export default async function ContractDetailPage({
               />
               <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-all">
                 <Download size={14} />
-                Download
+                <span className="hidden sm:inline">Download</span>
               </button>
               <ContractActions contractId={id} contractTitle={contract.title} />
             </div>

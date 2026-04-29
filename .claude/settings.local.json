@@ -28,7 +28,9 @@
       "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/templates/[id]\")",
       "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/submit-approval\")",
       "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/approve\")",
-      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/timesheets\")"
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/timesheets\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/api/contracts/[id]/report\")",
+      "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/\\(app\\)/contracts/[id]/report\")"
     ]
   },
   "enabledPlugins": {
