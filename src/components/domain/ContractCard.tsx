@@ -32,14 +32,14 @@ function FileIcon({ type }: { type: "pdf" | "docx" }) {
     : <FileType2 size={13} className="text-blue-500 dark:text-blue-400" />;
 }
 
-export function ContractCard({ contract }: { contract: Contract }) {
+export function ContractCard({ contract, href }: { contract: Contract; href?: string }) {
   const days = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
   const isUrgent  = days !== null && days <= 7 && days >= 0;
   const isExpired = days !== null && days < 0;
 
   return (
     <Link
-      href={`/contracts/${contract.id}`}
+      href={href ?? `/contracts/${contract.id}`}
       className="block rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:shadow-lg transition-all duration-200 overflow-hidden group"
       style={{ ["--tw-hover-border" as string]: "rgba(0,114,229,0.3)" }}
     >

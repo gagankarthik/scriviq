@@ -5,7 +5,7 @@ import {
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
   Activity, GitBranch, CheckSquare, BarChart3,
 } from "lucide-react";
-import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals, dbGetSowAnalysis } from "@/lib/aws/contracts";
+import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals, dbGetSowAnalysis, dbListContracts, dbGetProject } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { formatCurrency, daysUntil, computeRiskScore } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
@@ -14,6 +14,7 @@ import { ClauseList } from "@/components/domain/ClauseList";
 import { ContractActions } from "@/components/domain/ContractActions";
 import { AmendmentPanel } from "@/components/domain/AmendmentPanel";
 import { SowAnalysisPanel } from "@/components/domain/SowAnalysisPanel";
+import { ProjectDocumentSidebar } from "@/components/domain/ProjectDocumentSidebar";
 import { ContractEditModal } from "@/components/domain/ContractEditModal";
 import { SowTypeBadge } from "@/components/domain/SowTypeBadge";
 import { ApprovalBanner } from "@/components/domain/ApprovalBanner";
@@ -207,6 +208,16 @@ export default async function ContractDetailPage({
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
 
+  // Fetch project siblings for the sidebar (only when contract belongs to a project)
+  let projectContracts: Awaited<ReturnType<typeof dbListContracts>> = [];
+  let project: Awaited<ReturnType<typeof dbGetProject>> = null;
+  if (contract.projectId) {
+    [projectContracts, project] = await Promise.all([
+      dbListContracts(workspace, { projectId: contract.projectId }).catch(() => []),
+      dbGetProject(workspace, contract.projectId).catch(() => null),
+    ]);
+  }
+
   const days           = contract.expiryDate ? daysUntil(contract.expiryDate) : null;
   const highRisk       = clauses.filter((c) => c.riskLevel === "high");
   const mediumRisk     = clauses.filter((c) => c.riskLevel === "medium");
@@ -217,16 +228,32 @@ export default async function ContractDetailPage({
     .filter((c) => c.type === "payment_milestone")
     .reduce((s, c) => s + (c.amount ?? 0), 0);
 
+  const hasSidebar = !!contract.projectId && projectContracts.length > 0;
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="-mx-4 sm:-mx-6 -mt-4 sm:-mt-6 flex gap-0">
+
+      {/* Document sidebar — only shown when contract is in a project */}
+      {hasSidebar && project && (
+        <ProjectDocumentSidebar
+          contracts={projectContracts}
+          projectId={contract.projectId!}
+          projectColor={project.color}
+          projectName={project.name}
+        />
+      )}
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-10">
+      <div className="max-w-5xl space-y-6">
       {/* Back button + breadcrumb row */}
       <div className="flex items-center gap-2 min-w-0 overflow-hidden">
         <Link
-          href="/contracts"
+          href={contract.projectId ? `/contracts/projects/${contract.projectId}` : "/contracts"}
           className="inline-flex items-center gap-1.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors shrink-0"
         >
           <ArrowLeft size={13} />
-          <span className="hidden sm:inline">Back to Contracts</span>
+          <span className="hidden sm:inline">{contract.projectId ? "Back to Project" : "Back to Contracts"}</span>
           <span className="sm:hidden">Back</span>
         </Link>
         <span className="text-[var(--fg-muted)] text-xs shrink-0">/</span>
@@ -561,6 +588,8 @@ export default async function ContractDetailPage({
 
       {/* Amendments */}
       <AmendmentPanel contractId={id} initialAmendments={amendments} />
+      </div>
+      </div>
     </div>
   );
 }
