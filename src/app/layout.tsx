@@ -15,7 +15,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "scriviq — Know every clause. Miss nothing.",
+  title: "Blue-IQ Govern — Know every clause. Miss nothing.",
   description:
     "AI-powered contract intelligence for digital agencies. Extract, risk-score, and track every payment milestone, termination clause, and deadline buried in your SOWs.",
 };

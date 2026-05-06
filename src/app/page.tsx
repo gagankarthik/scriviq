@@ -59,7 +59,7 @@ const PAIN_POINTS = [
   {
     n: "03", Icon: Lock, accent: INK, accentBg: "rgba(19,18,16,0.03)",
     title: "IP you didn't mean to transfer",
-    body: "You built the design system. The contract says it's theirs. scriviq flags every IP clause before you sign.",
+    body: "You built the design system. The contract says it's theirs. Blue-IQ Govern flags every IP clause before you sign.",
     stat: "100%", statLabel: "IP vested in client",
   },
 ];
@@ -151,17 +151,17 @@ const EXTRACTION_CLAUSES = [
 const TESTIMONIALS = [
   {
     stars: 5,
-    quote: "scriviq caught an auto-renewal that would have locked us into another $85,000 year with a client we were actively off-boarding. It paid for itself in the first week.",
+    quote: "Blue-IQ Govern caught an auto-renewal that would have locked us into another $85,000 year with a client we were actively off-boarding. It paid for itself in the first week.",
     name: "Sarah Kim", role: "Creative Director, Momentum Agency", initials: "SK",
   },
   {
     stars: 5,
-    quote: "We manage 40+ active contracts. Before scriviq, I had a spreadsheet I updated manually every week. Now it's just handled.",
+    quote: "We manage 40+ active contracts. Before Blue-IQ Govern, I had a spreadsheet I updated manually every week. Now it's just handled.",
     name: "Marcus Tate", role: "Managing Partner, Brightfield Consulting", initials: "MT",
   },
   {
     stars: 5,
-    quote: "Three months in, scriviq flagged an IP clause that would have given a client full rights to a design system we built from scratch.",
+    quote: "Three months in, Blue-IQ Govern flagged an IP clause that would have given a client full rights to a design system we built from scratch.",
     name: "Elena Russo", role: "Head of Operations, PixelForge Studio", initials: "ER",
   },
 ];
@@ -340,7 +340,7 @@ export default function HomePage() {
       <nav className="nav-glass sticky top-0 z-50" style={{ borderBottom: `1px solid ${BD}` }}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="scriviq" width={127} height={27} />
+            <Image src="/logo.png" alt="blueiq-govern" width={127} height={27} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {[["Features","#features"],["How it works","#how-it-works"],["Pricing","#pricing"]].map(([l,h]) => (
@@ -385,7 +385,7 @@ export default function HomePage() {
               </h1>
 
               <p style={{ color: INK_2, fontSize: "clamp(15px,1.7vw,18px)", lineHeight: 1.7, maxWidth: 480, marginBottom: 32 }}>
-                scriviq reads every SOW, retainer, and service agreement —
+                Blue-IQ Govern reads every SOW, retainer, and service agreement —
                 extracting payment deadlines, auto-renewals, IP clauses, and
                 10 more types. Automated alerts keep you covered before it costs you.
               </p>
@@ -438,7 +438,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <div style={{ flex: 1, background: BG, borderRadius: 5, padding: "3px 10px", fontSize: 10, color: INK_3, fontFamily: "monospace", textAlign: "center" }}>
-                    app.scriviq.com/contracts
+                    app.blueiq.com/contracts
                   </div>
                   <div style={{ background: INK, color: BG, fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 5, flexShrink: 0 }}>
                     Upload
@@ -472,7 +472,7 @@ export default function HomePage() {
                     {/* Pro badge */}
                     <div style={{ margin: "12px 4px 0", padding: "6px 8px", borderRadius: 6, background: "rgba(0,114,229,0.08)", border: "1px solid rgba(0,114,229,0.15)" }}>
                       <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#0072E5", marginBottom: 1 }}>Workspace</p>
-                      <p style={{ fontSize: 9, color: INK_2, fontWeight: 600 }}>scriviq Agency</p>
+                      <p style={{ fontSize: 9, color: INK_2, fontWeight: 600 }}>Blue-IQ Govern</p>
                       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#75D8FC", background: "rgba(0,114,229,0.15)", padding: "1px 5px", borderRadius: 10, display: "inline-block", marginTop: 3 }}>Pro</span>
                     </div>
                   </div>
@@ -1026,7 +1026,7 @@ export default function HomePage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div>
-              <Image src="/logo.png" alt="scriviq" width={122} height={22} />
+              <Image src="/logo.png" alt="Blueiq" width={122} height={22} />
               <p style={{ fontSize: 12, color: INK_3, marginTop: 6 }}>AI contract intelligence for agencies.</p>
             </div>
             <div className="flex flex-wrap gap-6">
@@ -1034,7 +1034,7 @@ export default function HomePage() {
                 <a key={l} href="#" style={{ fontSize: 13, color: INK_3 }} className="hover:opacity-60 transition-opacity">{l}</a>
               ))}
             </div>
-            <p style={{ fontSize: 12, color: INK_3 }}>© {new Date().getFullYear()} scriviq</p>
+            <p style={{ fontSize: 12, color: INK_3 }}>© {new Date().getFullYear()} Blue-IQ Govern</p>
           </div>
         </div>
       </footer>

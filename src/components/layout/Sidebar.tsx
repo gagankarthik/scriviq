@@ -53,7 +53,7 @@ function SidebarContent({
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Image
             src="/logo.png"
-            alt="scriviq"
+            alt="blueiq-govern"
             width={130}
             height={30}
             className="shrink-0"
@@ -92,7 +92,7 @@ function SidebarContent({
             Workspace
           </p>
           <p className="text-xs font-medium text-[var(--fg-secondary)] truncate">
-            scriviq Agency
+            Blue-IQ Govern
           </p>
           <span
             className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full border"

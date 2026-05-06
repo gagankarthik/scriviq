@@ -39,7 +39,7 @@ export default function UploadPage() {
           Upload Contract
         </h1>
         <p className="text-sm text-[var(--fg-muted)] mt-1">
-          Upload a PDF or DOCX â€” scriviq extracts every clause in ~15 seconds.
+          Upload a PDF or DOCX — Blue-IQ Govern extracts every clause in ~15 seconds.
         </p>
       </div>
 

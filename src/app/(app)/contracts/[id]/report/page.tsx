@@ -780,7 +780,7 @@ export default function ContractReportPage() {
 
         {/* Footer */}
         <div className="pt-6 border-t border-[var(--border-subtle)] flex items-center justify-between text-[10px] text-[var(--fg-muted)] font-mono">
-          <span>scriviq — {contract.title}</span>
+          <span>Blue-IQ Govern — {contract.title}</span>
           <span>Generated {today}</span>
         </div>
       </div>

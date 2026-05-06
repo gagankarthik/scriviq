@@ -20,7 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
 function getPageTitle(path: string): string {
   if (PAGE_TITLES[path]) return PAGE_TITLES[path];
   if (path.startsWith("/contracts/")) return "Contract Detail";
-  return "scriviq";
+  return "Blue-IQ Govern";
 }
 
 function getInitials(name: string): string {
