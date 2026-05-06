@@ -602,3 +602,57 @@ export async function dbDeleteProject(workspace: string, id: string): Promise<vo
     new DeleteCommand({ TableName: TABLE, Key: { PK: workspace, SK: `PROJECT#${id}` } })
   );
 }
+
+// ── SOW Analysis ──────────────────────────────────────────────────────────────
+
+export async function dbGetSowAnalysis(
+  workspace: string,
+  contractId: string
+): Promise<import("@/lib/mock-data").SowAnalysis | null> {
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: TABLE,
+      Key: { PK: workspace, SK: `SOWANALYSIS#${contractId}` },
+    })
+  );
+  return (result.Item as import("@/lib/mock-data").SowAnalysis) ?? null;
+}
+
+export async function dbPutSowAnalysis(
+  workspace: string,
+  analysis: import("@/lib/mock-data").SowAnalysis
+): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: { ...analysis, PK: workspace, SK: `SOWANALYSIS#${analysis.contractId}` },
+    })
+  );
+}
+
+// ── Project Consolidation ─────────────────────────────────────────────────────
+
+export async function dbGetProjectConsolidation(
+  workspace: string,
+  projectId: string
+): Promise<import("@/lib/mock-data").ProjectConsolidation | null> {
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: TABLE,
+      Key: { PK: workspace, SK: `CONSOLIDATION#${projectId}` },
+    })
+  );
+  return (result.Item as import("@/lib/mock-data").ProjectConsolidation) ?? null;
+}
+
+export async function dbPutProjectConsolidation(
+  workspace: string,
+  consolidation: import("@/lib/mock-data").ProjectConsolidation
+): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: { ...consolidation, PK: workspace, SK: `CONSOLIDATION#${consolidation.projectId}` },
+    })
+  );
+}

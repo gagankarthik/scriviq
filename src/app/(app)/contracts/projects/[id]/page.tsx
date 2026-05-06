@@ -5,10 +5,11 @@ import {
   ArrowLeft, Upload, FileText, DollarSign,
   ShieldAlert, Clock, FolderOpen,
 } from "lucide-react";
-import { dbGetProject, dbListContracts, dbListClauses } from "@/lib/aws/contracts";
+import { dbGetProject, dbListContracts, dbListClauses, dbGetProjectConsolidation } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { ContractCard } from "@/components/domain/ContractCard";
 import { ContractFilters } from "@/components/domain/ContractFilters";
+import { ProjectDocumentIntelligence } from "@/components/domain/ProjectDocumentIntelligence";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function ProjectPage({
@@ -32,6 +33,8 @@ export default async function ProjectPage({
       dbListContracts(workspace, { projectId: id }),
     ]);
   } catch { /* DB unavailable */ }
+
+  const consolidation = await dbGetProjectConsolidation(workspace, id).catch(() => null);
 
   if (!project) notFound();
 
@@ -165,6 +168,13 @@ export default async function ProjectPage({
           </div>
         ))}
       </div>
+
+      {/* Document Intelligence */}
+      <ProjectDocumentIntelligence
+        projectId={id}
+        projectColor={project.color}
+        initialConsolidation={consolidation}
+      />
 
       {/* Filters */}
       <Suspense>

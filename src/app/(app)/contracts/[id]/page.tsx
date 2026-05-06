@@ -5,7 +5,7 @@ import {
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
   Activity, GitBranch, CheckSquare, BarChart3,
 } from "lucide-react";
-import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals } from "@/lib/aws/contracts";
+import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals, dbGetSowAnalysis } from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
 import { formatCurrency, daysUntil, computeRiskScore } from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
@@ -13,6 +13,7 @@ import { RiskGauge } from "@/components/domain/RiskGauge";
 import { ClauseList } from "@/components/domain/ClauseList";
 import { ContractActions } from "@/components/domain/ContractActions";
 import { AmendmentPanel } from "@/components/domain/AmendmentPanel";
+import { SowAnalysisPanel } from "@/components/domain/SowAnalysisPanel";
 import { ContractEditModal } from "@/components/domain/ContractEditModal";
 import { SowTypeBadge } from "@/components/domain/SowTypeBadge";
 import { ApprovalBanner } from "@/components/domain/ApprovalBanner";
@@ -196,11 +197,12 @@ export default async function ContractDetailPage({
   const dbContract = await dbGetContract(workspace, id).catch(() => null);
   if (!dbContract) notFound();
 
-  const [clauses, allAlerts, amendments, approvalSteps] = await Promise.all([
+  const [clauses, allAlerts, amendments, approvalSteps, sowAnalysis] = await Promise.all([
     dbListClauses(workspace, id).catch(() => []),
     dbListAlerts(workspace).catch(() => []),
     dbListAmendments(workspace, id).catch(() => []),
     dbListApprovals(workspace, id).catch(() => []),
+    dbGetSowAnalysis(workspace, id).catch(() => null),
   ]);
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
@@ -553,6 +555,9 @@ export default async function ContractDetailPage({
           </div>
         </div>
       </div>
+
+      {/* SOW Intelligence */}
+      <SowAnalysisPanel contractId={id} initialAnalysis={sowAnalysis} />
 
       {/* Amendments */}
       <AmendmentPanel contractId={id} initialAmendments={amendments} />

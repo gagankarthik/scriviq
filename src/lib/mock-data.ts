@@ -193,3 +193,120 @@ export interface Amendment {
   uploadedAt:  string;
   changes:     ClauseChange[];
 }
+
+// ── SOW Analysis ──────────────────────────────────────────────────────────────
+
+export interface SowVaguePhrase {
+  id: string;
+  clauseContext: string;
+  phrase: string;
+  reason: string;
+  suggestion: string;
+  riskImpact: RiskLevel;
+}
+
+export interface RaciEntry {
+  task: string;
+  responsible: string;
+  accountable: string;
+  consulted: string;
+  informed: string;
+}
+
+export interface MissingClause {
+  name: string;
+  importance: "critical" | "recommended" | "optional";
+  description: string;
+  example: string;
+}
+
+export interface SowQaFlag {
+  type: "date_inconsistency" | "undefined_acronym" | "missing_reference" | "grammar" | "style";
+  message: string;
+  severity: "error" | "warning";
+  context?: string;
+}
+
+export interface SowCoachingTip {
+  clauseTitle: string;
+  riskLevel: RiskLevel;
+  why: string;
+  fix: string;
+}
+
+export interface SowAnalysis {
+  contractId: string;
+  analysedAt: string;
+  healthScore: number;
+  tone: "professional" | "collaborative" | "aggressive" | "vague" | "balanced";
+  toneNotes: string;
+  vagueCount: number;
+  criticalMissingCount: number;
+  vaguePhrases: SowVaguePhrase[];
+  missingClauses: MissingClause[];
+  raciMatrix: RaciEntry[];
+  qaFlags: SowQaFlag[];
+  coachingTips: SowCoachingTip[];
+}
+
+// ── Multi-Document Version Intelligence ───────────────────────────────────────
+
+export type DocType = "base_sow" | "amendment" | "change_order" | "informal" | "side_sow";
+
+export interface DocTimelineEntry {
+  contractId: string;
+  title: string;
+  uploadedAt: string;
+  docType: DocType;
+  isInformal: boolean;
+  contractValue: number | null;
+  expiryDate: string | null;
+  clauseCount: number;
+  keyChanges: string[];
+}
+
+export interface CrossDocConflict {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  type: "contradiction" | "scope_budget_mismatch" | "timeline_resource_mismatch" | "missing_approval" | "overlap" | "external_reference" | "informal_change";
+  title: string;
+  description: string;
+  docAId: string;
+  docATitle: string;
+  docBId?: string;
+  docBTitle?: string;
+  recommendation: string;
+}
+
+export interface ConsolidatedClause {
+  clauseType: string;
+  clauseTitle: string;
+  currentText: string;
+  sourceDocId: string;
+  sourceDocTitle: string;
+  isOverridden: boolean;
+  originalText?: string;
+  originalDocTitle?: string;
+}
+
+export interface ProjectConsolidation {
+  projectId: string;
+  analysedAt: string;
+  docCount: number;
+  baseDocId: string | null;
+  baseDocTitle: string | null;
+  originalValue: number | null;
+  currentValue: number | null;
+  valueDelta: number | null;
+  originalEndDate: string | null;
+  currentEndDate: string | null;
+  timelineDeltaDays: number | null;
+  informalChangeCount: number;
+  conflictCount: number;
+  criticalConflictCount: number;
+  timeline: DocTimelineEntry[];
+  conflicts: CrossDocConflict[];
+  consolidatedClauses: ConsolidatedClause[];
+  executiveSummary: string;
+  masterSowText: string;
+}
