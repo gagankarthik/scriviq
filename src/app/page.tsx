@@ -340,7 +340,7 @@ export default function HomePage() {
       <nav className="nav-glass sticky top-0 z-50" style={{ borderBottom: `1px solid ${BD}` }}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo.svg" alt="scriviq" width={127} height={27} />
+            <Image src="/logo.png" alt="scriviq" width={127} height={27} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {[["Features","#features"],["How it works","#how-it-works"],["Pricing","#pricing"]].map(([l,h]) => (
@@ -450,7 +450,7 @@ export default function HomePage() {
                   {/* Sidebar */}
                   <div style={{ background: BG, borderRight: `1px solid ${BD_LT}`, padding: "10px 6px" }}>
                     <div style={{ padding: "0 6px", marginBottom: 12 }}>
-                      <Image src="/logo.svg" alt="" width={76} height={16} />
+                      <Image src="/logo.png" alt="" width={76} height={16} />
                     </div>
                     {[
                       { label: "Dashboard",  active: false },
@@ -1026,7 +1026,7 @@ export default function HomePage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div>
-              <Image src="/logo.svg" alt="scriviq" width={122} height={22} />
+              <Image src="/logo.png" alt="scriviq" width={122} height={22} />
               <p style={{ fontSize: 12, color: INK_3, marginTop: 6 }}>AI contract intelligence for agencies.</p>
             </div>
             <div className="flex flex-wrap gap-6">

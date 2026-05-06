@@ -52,7 +52,7 @@ function SidebarContent({
       <div className="flex items-center px-6 h-16 border-b border-[var(--border-subtle)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Image
-            src="/logo.svg"
+            src="/logo.png"
             alt="scriviq"
             width={130}
             height={30}
