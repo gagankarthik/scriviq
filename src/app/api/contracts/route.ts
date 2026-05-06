@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       sowType?: SowType;
       budgetHours?: number;
       budgetRate?: number;
+      projectId?: string;
     };
 
     const now: string = new Date().toISOString();
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       ...(body.sowType     && { sowType:     body.sowType }),
       ...(body.budgetHours && { budgetHours: body.budgetHours }),
       ...(body.budgetRate  && { budgetRate:  body.budgetRate }),
+      ...(body.projectId   && { projectId:   body.projectId }),
     };
 
     await dbPutContract(session.workspace, contract);

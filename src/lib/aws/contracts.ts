@@ -8,7 +8,7 @@ import {
 import { dynamo, TABLE } from "./dynamodb";
 import type {
   Contract, Clause, Alert, ActivityEvent, Amendment,
-  ComplianceRule, ApprovalStep, SOWTemplate, TimesheetEntry,
+  ComplianceRule, ApprovalStep, SOWTemplate, TimesheetEntry, Project,
 } from "@/lib/mock-data";
 
 // ── Key helpers ───────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ function clausePK(workspace: string, contractId: string) {
 
 export async function dbListContracts(
   workspace: string,
-  opts?: { status?: string; risk?: string; q?: string }
+  opts?: { status?: string; risk?: string; q?: string; projectId?: string }
 ): Promise<Contract[]> {
   const result = await dynamo.send(
     new QueryCommand({
@@ -36,6 +36,7 @@ export async function dbListContracts(
     (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
   );
 
+  if (opts?.projectId !== undefined) items = items.filter((c) => c.projectId === opts.projectId);
   if (opts?.status) items = items.filter((c) => c.status === opts.status);
   if (opts?.risk)   items = items.filter((c) => c.riskScore === opts.risk);
   if (opts?.q) {
@@ -540,4 +541,64 @@ export async function dbGetDashboardStats(workspace: string) {
     upcomingDeadlineCount:upcoming.length,
     pendingAlertCount:    pendingCount,
   };
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+export async function dbListProjects(workspace: string): Promise<Project[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: { ":pk": workspace, ":prefix": "PROJECT#" },
+      ScanIndexForward: false,
+    })
+  );
+  return ((result.Items ?? []) as Project[]).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export async function dbGetProject(workspace: string, id: string): Promise<Project | null> {
+  const result = await dynamo.send(
+    new GetCommand({ TableName: TABLE, Key: { PK: workspace, SK: `PROJECT#${id}` } })
+  );
+  return (result.Item as Project) ?? null;
+}
+
+export async function dbPutProject(workspace: string, project: Project): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: TABLE,
+      Item: { ...project, PK: workspace, SK: `PROJECT#${project.id}` },
+    })
+  );
+}
+
+export async function dbUpdateProject(
+  workspace: string,
+  id: string,
+  updates: Partial<Project>
+): Promise<void> {
+  const sets: string[] = [];
+  const values: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    sets.push(`${k} = :${k}`);
+    values[`:${k}`] = v;
+  }
+  if (!sets.length) return;
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: TABLE,
+      Key: { PK: workspace, SK: `PROJECT#${id}` },
+      UpdateExpression: `SET ${sets.join(", ")}`,
+      ExpressionAttributeValues: values,
+    })
+  );
+}
+
+export async function dbDeleteProject(workspace: string, id: string): Promise<void> {
+  await dynamo.send(
+    new DeleteCommand({ TableName: TABLE, Key: { PK: workspace, SK: `PROJECT#${id}` } })
+  );
 }

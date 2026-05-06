@@ -25,10 +25,27 @@ export type ApprovalStatus = "draft" | "pending_approval" | "approved" | "reject
 export type ComplianceRuleCondition = "must_contain" | "must_not_contain" | "must_exist" | "must_not_exist";
 export type ComplianceSeverity = "error" | "warning";
 
+export const PROJECT_COLORS = [
+  "#0072E5", "#8b5cf6", "#10b981", "#f59e0b",
+  "#ef4444", "#ec4899", "#14b8a6", "#f97316",
+] as const;
+export type ProjectColor = typeof PROJECT_COLORS[number];
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  clientName: string;
+  color: ProjectColor;
+  createdAt: string;
+  status: "active" | "archived";
+}
+
 export interface Contract {
   id: string;
   title: string;
   clientName: string;
+  projectId?: string;
   status: ContractStatus;
   riskScore: RiskLevel | null;
   clauseCount: number;

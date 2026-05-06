@@ -302,7 +302,7 @@ function FileCard({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ContractUploader() {
+export function ContractUploader({ projectId }: { projectId?: string }) {
   const router   = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -389,7 +389,8 @@ export function ContractUploader() {
         id: contractId, title, clientName, fileType,
         contractValue: value ? Number(value) : undefined,
         expiryDate: expiryDate || undefined,
-        ...(sowType && { sowType }),
+        ...(sowType    && { sowType }),
+        ...(projectId  && { projectId }),
       }),
     });
 
@@ -433,11 +434,11 @@ export function ContractUploader() {
         form.sowType, 0, setQueueIdx, setStage);
       setStage("done");
       await new Promise((r) => setTimeout(r, 1200));
-      router.push(`/contracts/${contractId}`);
+      router.push(projectId ? `/contracts/projects/${projectId}` : `/contracts/${contractId}`);
     } catch {
       setStage("error");
       await new Promise((r) => setTimeout(r, 800));
-      router.push("/contracts");
+      router.push(projectId ? `/contracts/projects/${projectId}` : "/contracts");
     }
   }
 
@@ -463,12 +464,15 @@ export function ContractUploader() {
       }
       setStage("done");
       await new Promise((r) => setTimeout(r, 1400));
-      // Navigate to contracts list when multiple
-      router.push(queue.length === 1 ? `/contracts/${ids[0]}` : "/contracts");
+      if (projectId) {
+        router.push(`/contracts/projects/${projectId}`);
+      } else {
+        router.push(queue.length === 1 ? `/contracts/${ids[0]}` : "/contracts");
+      }
     } catch {
       setStage("error");
       await new Promise((r) => setTimeout(r, 800));
-      router.push("/contracts");
+      router.push(projectId ? `/contracts/projects/${projectId}` : "/contracts");
     }
   }
 

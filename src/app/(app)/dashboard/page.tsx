@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   Upload, ArrowRight, FileText, Bell, Sparkles,
   RefreshCw, AlertTriangle, TrendingUp, DollarSign,
-  FileCheck2, ShieldAlert, Clock,
+  FileCheck2, ShieldAlert, Clock, FolderOpen, Plus,
 } from "lucide-react";
 import { AlertsWidget } from "@/components/domain/AlertsWidget";
 import { ActivityFeed } from "@/components/domain/ActivityFeed";
@@ -20,9 +20,10 @@ import {
   dbListContracts,
   dbListActivity,
   dbListAlerts,
+  dbListProjects,
 } from "@/lib/aws/contracts";
 import { formatCurrency, daysUntil } from "@/lib/utils";
-import type { Contract } from "@/lib/mock-data";
+import type { Contract, Project } from "@/lib/mock-data";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -33,35 +34,34 @@ const EMPTY_STATS = {
 
 async function getData(workspace: string) {
   if (!workspace)
-    return { stats: EMPTY_STATS, contracts: [], allContracts: [], activity: [], pendingAlerts: [], isEmpty: true };
+    return { stats: EMPTY_STATS, contracts: [], allContracts: [], activity: [], pendingAlerts: [], projects: [], isEmpty: true };
   try {
-    const [stats, allContracts, activity, pendingAlerts] = await Promise.all([
+    const [stats, allContracts, activity, pendingAlerts, projects] = await Promise.all([
       dbGetDashboardStats(workspace),
       dbListContracts(workspace),
       dbListActivity(workspace, 10),
       dbListAlerts(workspace, { status: "pending" }).then(a => a.slice(0, 5)),
+      dbListProjects(workspace),
     ]);
     const contracts = allContracts.slice(0, 4);
     const isEmpty   = !allContracts.length && !pendingAlerts.length && !activity.length;
-    return { stats, contracts, allContracts, activity, pendingAlerts, isEmpty };
+    return { stats, contracts, allContracts, activity, pendingAlerts, projects, isEmpty };
   } catch {
-    return { stats: EMPTY_STATS, contracts: [], allContracts: [], activity: [], pendingAlerts: [], isEmpty: true };
+    return { stats: EMPTY_STATS, contracts: [], allContracts: [], activity: [], pendingAlerts: [], projects: [], isEmpty: true };
   }
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, leftColor, textColor, Icon,
+  label, value, sub, leftColor, textColor, Icon, href,
 }: {
   label: string; value: string; sub?: string;
   leftColor: string; textColor: string; Icon: React.ElementType;
+  href?: string;
 }) {
-  return (
-    <div
-      className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5 border-l-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)] transition-shadow"
-      style={{ borderLeftColor: leftColor }}
-    >
+  const inner = (
+    <>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">{label}</p>
         <div
@@ -73,6 +73,26 @@ function StatCard({
       </div>
       <p className={`text-lg sm:text-2xl font-bold font-mono tracking-tight ${textColor}`}>{value}</p>
       {sub && <p className="text-xs text-[var(--fg-muted)] mt-1">{sub}</p>}
+    </>
+  );
+
+  const cls = "rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5 border-l-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-200 block";
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cls + " hover:border-[rgba(0,114,229,0.25)] group"}
+        style={{ borderLeftColor: leftColor }}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cls} style={{ borderLeftColor: leftColor }}>
+      {inner}
     </div>
   );
 }
@@ -93,14 +113,14 @@ function EmptyOnboarding() {
       </div>
       <h2 className="text-base font-semibold text-[var(--fg-primary)] mb-2">Your workspace is ready</h2>
       <p className="text-sm text-[var(--fg-muted)] max-w-sm mx-auto leading-relaxed mb-6">
-        Upload your first contract to start extracting clauses, tracking deadlines, and monitoring risk with AI.
+        Create a project to organise your SOWs, then upload contracts to start extracting clauses and tracking risk with AI.
       </p>
       <div className="flex items-center justify-center gap-3 flex-wrap">
-        <Link href="/contracts/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium btn-brand">
-          <Upload size={15} />Upload contract
+        <Link href="/contracts/projects/new" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium btn-brand">
+          <FolderOpen size={15} />Create a project
         </Link>
-        <Link href="/contracts" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-colors">
-          <FileText size={15} />View contracts
+        <Link href="/contracts/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-colors">
+          <Upload size={15} />Upload directly
         </Link>
       </div>
     </div>
@@ -170,6 +190,104 @@ function RenewalPipeline({ contracts }: { contracts: Contract[] }) {
   );
 }
 
+// ── Projects overview ─────────────────────────────────────────────────────────
+
+function ProjectsOverview({
+  projects,
+  allContracts,
+}: {
+  projects: Project[];
+  allContracts: Contract[];
+}) {
+  if (!projects.length) return null;
+
+  const activeProjects = projects.filter((p) => p.status === "active").slice(0, 6);
+
+  return (
+    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <FolderOpen size={13} className="text-[var(--fg-muted)]" />
+          <h2 className="text-sm font-semibold text-[var(--fg-primary)]">Projects</h2>
+          <span className="text-[9px] font-mono text-[var(--fg-muted)] bg-[var(--surface-subtle)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded uppercase tracking-widest">
+            {activeProjects.length} active
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/contracts/projects/new"
+            className="inline-flex items-center gap-1.5 text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline"
+          >
+            <Plus size={11} />
+            New
+          </Link>
+          <Link href="/contracts" className="text-xs text-[#0072E5] dark:text-[#75D8FC] hover:underline inline-flex items-center gap-1">
+            All <ArrowRight size={11} />
+          </Link>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {activeProjects.map((p) => {
+          const cs         = allContracts.filter((c) => c.projectId === p.id);
+          const totalValue = cs.reduce((s, c) => s + (c.contractValue ?? 0), 0);
+          const risks      = cs.map((c) => c.riskScore).filter(Boolean) as string[];
+          const risk       = risks.includes("high") ? "high" : risks.includes("medium") ? "medium" : risks.includes("low") ? "low" : null;
+          const riskColor  = risk === "high" ? "#ef4444" : risk === "medium" ? "#f59e0b" : risk === "low" ? "#10b981" : "var(--fg-muted)";
+
+          return (
+            <Link
+              key={p.id}
+              href={`/contracts/projects/${p.id}`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--surface-subtle)] transition-colors border border-transparent hover:border-[var(--border-subtle)]"
+            >
+              <div
+                className="w-2 h-6 rounded-full shrink-0"
+                style={{ backgroundColor: p.color }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--fg-primary)] truncate">{p.name}</p>
+                <p className="text-[10px] text-[var(--fg-muted)] truncate">{p.clientName}</p>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <span className="text-xs font-mono text-[var(--fg-muted)]">
+                  {cs.length} doc{cs.length !== 1 ? "s" : ""}
+                </span>
+                {totalValue > 0 && (
+                  <span className="text-xs font-mono text-[var(--fg-secondary)] hidden sm:inline">
+                    {formatCurrency(totalValue)}
+                  </span>
+                )}
+                {risk && (
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border"
+                    style={{
+                      color: riskColor,
+                      backgroundColor: `${riskColor}12`,
+                      borderColor: `${riskColor}30`,
+                    }}
+                  >
+                    {risk}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {projects.length > 6 && (
+        <Link
+          href="/contracts"
+          className="mt-3 block text-xs text-center text-[var(--fg-muted)] hover:text-[#0072E5] transition-colors"
+        >
+          +{projects.length - 6} more projects
+        </Link>
+      )}
+    </div>
+  );
+}
+
 // ── Greeting ──────────────────────────────────────────────────────────────────
 
 function greeting() {
@@ -184,7 +302,7 @@ export default async function DashboardPage() {
   const workspace = session?.workspace ?? "";
   const firstName = session?.name?.split(" ")[0] ?? "there";
 
-  const { stats, contracts, allContracts, activity, pendingAlerts, isEmpty } =
+  const { stats, contracts, allContracts, activity, pendingAlerts, projects, isEmpty } =
     await getData(workspace);
 
   return (
@@ -210,13 +328,22 @@ export default async function DashboardPage() {
             }
           </p>
         </div>
-        <Link
-          href="/contracts/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shrink-0 btn-brand"
-        >
-          <Upload size={15} />
-          Upload contract
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/contracts/projects/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] text-sm font-medium transition-colors"
+          >
+            <FolderOpen size={15} />
+            New Project
+          </Link>
+          <Link
+            href="/contracts/upload"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold btn-brand"
+          >
+            <Upload size={15} />
+            Upload
+          </Link>
+        </div>
       </div>
 
       {/* ── Stats row ── */}
@@ -228,6 +355,7 @@ export default async function DashboardPage() {
           leftColor="#0072E5"
           textColor="text-[#0072E5] dark:text-[#75D8FC]"
           Icon={DollarSign}
+          href="/contracts?status=ready"
         />
         <StatCard
           label="Active Contracts"
@@ -236,6 +364,7 @@ export default async function DashboardPage() {
           leftColor="#10b981"
           textColor="text-emerald-600 dark:text-emerald-400"
           Icon={FileCheck2}
+          href="/contracts?status=ready"
         />
         <StatCard
           label="High-Risk Clauses"
@@ -244,6 +373,7 @@ export default async function DashboardPage() {
           leftColor="#ef4444"
           textColor={stats.highRiskClauseCount > 0 ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]"}
           Icon={ShieldAlert}
+          href="/contracts?risk=high"
         />
         <StatCard
           label="Upcoming Deadlines"
@@ -252,8 +382,14 @@ export default async function DashboardPage() {
           leftColor="#f59e0b"
           textColor={stats.upcomingDeadlineCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]"}
           Icon={Clock}
+          href="/alerts"
         />
       </div>
+
+      {/* ── Projects overview (always shown when projects exist) ── */}
+      {projects.length > 0 && (
+        <ProjectsOverview projects={projects} allContracts={allContracts} />
+      )}
 
       {isEmpty ? (
         <EmptyOnboarding />

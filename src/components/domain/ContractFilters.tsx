@@ -17,7 +17,7 @@ const RISK_TABS = [
   { value: "low",    label: "Low" },
 ];
 
-export function ContractFilters() {
+export function ContractFilters({ basePath = "/contracts" }: { basePath?: string }) {
   const router = useRouter();
   const sp     = useSearchParams();
   const status = sp.get("status") ?? "";
@@ -30,7 +30,7 @@ export function ContractFilters() {
       if (v) next.set(k, v);
       else   next.delete(k);
     });
-    router.push(`/contracts?${next.toString()}`);
+    router.push(`${basePath}?${next.toString()}`);
   }
 
   return (

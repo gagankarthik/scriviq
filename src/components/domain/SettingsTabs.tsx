@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   CheckCircle2, CreditCard, User, Bell, Shield,
   FileText, AlertTriangle, TrendingUp, Clock,
+  LayoutDashboard, FolderOpen, Upload, ArrowRight, Building2,
+  ShieldAlert, DollarSign, FileCheck2,
 } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 import { ComplianceRulesPanel } from "./ComplianceRulesPanel";
 
-type Tab = "profile" | "notifications" | "billing" | "compliance";
+type Tab = "workspace" | "profile" | "notifications" | "billing" | "compliance";
 
 export interface SettingsUser  { name: string; email: string }
 export interface SettingsStats {
@@ -42,14 +45,128 @@ function Toggle({ label, sub, checked, onChange }: {
   );
 }
 
+// ── Workspace panel ───────────────────────────────────────────────────────────
+
+function WorkspacePanel({ stats }: { stats: SettingsStats }) {
+  const statCards = [
+    {
+      label: "Active Contracts",
+      value: String(stats.activeContracts),
+      Icon: FileText,
+      color: "#0072E5",
+      href: "/contracts?status=ready",
+      description: "View all active contracts",
+    },
+    {
+      label: "Portfolio Value",
+      value: formatCurrency(stats.totalValue),
+      Icon: DollarSign,
+      color: "#10b981",
+      href: "/contracts?status=ready",
+      description: "Total contract value",
+    },
+    {
+      label: "High-Risk Clauses",
+      value: String(stats.highRiskClauseCount),
+      Icon: ShieldAlert,
+      color: "#ef4444",
+      href: "/contracts?risk=high",
+      description: "Contracts with high-risk clauses",
+    },
+    {
+      label: "Upcoming Deadlines",
+      value: String(stats.upcomingDeadlineCount),
+      Icon: Clock,
+      color: "#f59e0b",
+      href: "/alerts",
+      description: "Deadlines in the next 30 days",
+    },
+    {
+      label: "Processing",
+      value: String(stats.processingCount),
+      Icon: TrendingUp,
+      color: "#8b5cf6",
+      href: "/contracts?status=processing",
+      description: "Contracts being analysed",
+    },
+    {
+      label: "Pending Alerts",
+      value: String(stats.pendingAlertCount),
+      Icon: AlertTriangle,
+      color: "#f59e0b",
+      href: "/alerts",
+      description: "Unacknowledged alerts",
+    },
+  ];
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      {/* Quick-access stat cards */}
+      <div>
+        <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider mb-3">
+          Workspace Overview
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {statCards.map(({ label, value, Icon, color, href, description }) => (
+            <Link
+              key={label}
+              href={href}
+              className="group rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 hover:border-[rgba(0,114,229,0.3)] transition-all duration-150"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${color}1a` }}>
+                  <Icon size={14} style={{ color }} />
+                </div>
+                <ArrowRight size={13} className="text-[var(--fg-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <p className="text-2xl font-bold font-mono mb-0.5" style={{ color }}>{value}</p>
+              <p className="text-xs font-medium text-[var(--fg-secondary)]">{label}</p>
+              <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">{description}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] divide-y divide-[var(--border-subtle)]">
+        <div className="px-5 py-3">
+          <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Quick Actions</p>
+        </div>
+        {[
+          { label: "Go to Dashboard",      sub: "View analytics and recent activity",    href: "/dashboard",          Icon: LayoutDashboard },
+          { label: "Browse Contracts",     sub: "View all projects and uploaded SOWs",   href: "/contracts",          Icon: FolderOpen      },
+          { label: "Upload a Contract",    sub: "Add a new SOW or agreement",            href: "/contracts/upload",   Icon: Upload          },
+          { label: "View Compliance Rules",sub: "Edit your clause monitoring rules",     href: "#compliance",         Icon: FileCheck2      },
+        ].map(({ label, sub, href, Icon }) => (
+          <Link
+            key={label}
+            href={href}
+            className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--surface-subtle)] transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center shrink-0">
+              <Icon size={14} className="text-[var(--fg-muted)] group-hover:text-[#0072E5] transition-colors" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[var(--fg-primary)]">{label}</p>
+              <p className="text-xs text-[var(--fg-muted)]">{sub}</p>
+            </div>
+            <ArrowRight size={13} className="text-[var(--fg-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Usage stats band ──────────────────────────────────────────────────────────
 
 function UsageStats({ stats }: { stats: SettingsStats }) {
   const items = [
-    { label: "Active Contracts", value: String(stats.activeContracts), Icon: FileText, color: "#0072E5" },
-    { label: "Portfolio Value",  value: formatCurrency(stats.totalValue),     Icon: TrendingUp, color: "#10b981" },
-    { label: "High-Risk Clauses",value: String(stats.highRiskClauseCount),   Icon: AlertTriangle, color: "#ef4444" },
-    { label: "Upcoming Deadlines",value: String(stats.upcomingDeadlineCount), Icon: Clock,   color: "#f59e0b" },
+    { label: "Active Contracts",  value: String(stats.activeContracts),      Icon: FileText,     color: "#0072E5", href: "/contracts?status=ready" },
+    { label: "Portfolio Value",   value: formatCurrency(stats.totalValue),   Icon: TrendingUp,   color: "#10b981", href: "/contracts?status=ready" },
+    { label: "High-Risk Clauses", value: String(stats.highRiskClauseCount),  Icon: AlertTriangle, color: "#ef4444", href: "/contracts?risk=high" },
+    { label: "Upcoming Deadlines",value: String(stats.upcomingDeadlineCount), Icon: Clock,        color: "#f59e0b", href: "/alerts" },
   ];
 
   return (
@@ -58,14 +175,14 @@ function UsageStats({ stats }: { stats: SettingsStats }) {
         Workspace Overview
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {items.map(({ label, value, Icon, color }) => (
-          <div key={label} className="flex flex-col gap-1">
+        {items.map(({ label, value, Icon, color, href }) => (
+          <Link key={label} href={href} className="group flex flex-col gap-1 cursor-pointer">
             <div className="flex items-center gap-1.5">
               <Icon size={12} style={{ color }} />
               <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
-            <p className="text-xl font-bold font-mono" style={{ color }}>{value}</p>
-          </div>
+            <p className="text-xl font-bold font-mono group-hover:underline" style={{ color }}>{value}</p>
+          </Link>
         ))}
       </div>
     </div>
@@ -242,9 +359,10 @@ function BillingPanel() {
 // ── Tabs shell ────────────────────────────────────────────────────────────────
 
 export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: SettingsStats }) {
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>("workspace");
 
   const TABS: { value: Tab; label: string; Icon: React.ElementType }[] = [
+    { value: "workspace",     label: "Workspace",     Icon: Building2  },
     { value: "profile",       label: "Profile",       Icon: User       },
     { value: "notifications", label: "Notifications", Icon: Bell       },
     { value: "billing",       label: "Billing",       Icon: CreditCard },
@@ -275,6 +393,7 @@ export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: Setti
         ))}
       </div>
 
+      {tab === "workspace"     && <WorkspacePanel stats={stats} />}
       {tab === "profile"       && <ProfilePanel user={user} />}
       {tab === "notifications" && <NotificationsPanel />}
       {tab === "billing"       && <BillingPanel />}

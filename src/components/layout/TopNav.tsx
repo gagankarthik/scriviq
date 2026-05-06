@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Bell, Sun, Moon, Search, Upload, LogOut } from "lucide-react";
+import { Menu, Bell, Sun, Moon, Search, LogOut } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useSidebar } from "./SidebarContext";
 import { useTheme } from "./ThemeProvider";
@@ -91,15 +91,6 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
           >
             <Search size={16} strokeWidth={1.75} />
           </button>
-
-          {/* Quick upload */}
-          <Link
-            href="/contracts/upload"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors btn-brand"
-          >
-            <Upload size={13} strokeWidth={2} />
-            Upload
-          </Link>
 
           {/* Alerts */}
           <Link

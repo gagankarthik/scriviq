@@ -7,7 +7,8 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle,
   Loader2, PlusCircle, MinusCircle, RotateCcw,
   GitMerge, CornerDownRight, Upload, FileText,
-  Type, X,
+  Type, X, GitCommitHorizontal, TrendingUp, TrendingDown, Minus,
+  ArrowRight,
 } from "lucide-react";
 import type { Amendment, ClauseChange, ClauseChangeType, ClauseChangeStatus } from "@/lib/mock-data";
 import { RiskBadge } from "./RiskBadge";
@@ -471,7 +472,7 @@ function AmendmentCard({
             </span>
             <h4 className="text-sm font-semibold text-[var(--fg-primary)]">{amendment.title}</h4>
           </div>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             <span className="text-xs text-[var(--fg-muted)] font-mono">
               {new Date(amendment.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
@@ -480,6 +481,26 @@ function AmendmentCard({
               {isResolved && ` · ${acceptedCount} accepted`}
               {!isResolved && pendingCount > 0 && ` · ${pendingCount} pending`}
             </span>
+            {/* Change type pills */}
+            <div className="flex items-center gap-1">
+              {(["added","modified","removed"] as const).map((type) => {
+                const count = amendment.changes.filter((c) => c.changeType === type).length;
+                if (!count) return null;
+                const { color, bg, border, Icon } = CHANGE_META[type];
+                return (
+                  <span key={type} className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border"
+                    style={{ color, backgroundColor: bg, borderColor: border }}>
+                    <Icon size={8} />{count}
+                  </span>
+                );
+              })}
+              {amendment.changes.some((c) => c.riskLevel === "high") && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border"
+                  style={{ color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.25)" }}>
+                  <AlertTriangle size={8} />{amendment.changes.filter((c) => c.riskLevel === "high").length} high-risk
+                </span>
+              )}
+            </div>
           </div>
           {amendment.description && (
             <p className="text-xs text-[var(--fg-secondary)] mt-1 line-clamp-1">{amendment.description}</p>
@@ -532,6 +553,102 @@ function AmendmentCard({
   );
 }
 
+// ── Evolution timeline ────────────────────────────────────────────────────────
+
+function EvolutionTimeline({ amendments }: { amendments: Amendment[] }) {
+  const resolved = amendments.filter((a) => a.status === "resolved");
+  if (resolved.length === 0) return null;
+
+  // Net accepted changes across all resolved amendments
+  const allAccepted = resolved.flatMap((a) => a.changes.filter((c) => c.status === "accepted"));
+  const netAdded    = allAccepted.filter((c) => c.changeType === "added").length;
+  const netModified = allAccepted.filter((c) => c.changeType === "modified").length;
+  const netRemoved  = allAccepted.filter((c) => c.changeType === "removed").length;
+  const highRisk    = allAccepted.filter((c) => c.riskLevel === "high").length;
+
+  return (
+    <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <GitCommitHorizontal size={14} style={{ color: "#0072E5" }} />
+        <h3 className="text-sm font-semibold text-[var(--fg-primary)]">Contract Evolution</h3>
+        <span className="text-xs text-[var(--fg-muted)] font-mono">
+          {resolved.length} resolved amendment{resolved.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Timeline */}
+      <div className="flex items-start gap-0 overflow-x-auto pb-1">
+        {/* Origin node */}
+        <div className="flex flex-col items-center gap-1 shrink-0 min-w-[80px]">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+            style={{ backgroundColor: "rgba(0,114,229,0.12)", border: "2px solid #0072E5", color: "#0072E5" }}>
+            v1
+          </div>
+          <p className="text-[9px] text-[var(--fg-muted)] text-center font-semibold uppercase tracking-wider">Original</p>
+          <p className="text-[9px] text-[var(--fg-muted)] text-center">SOW</p>
+        </div>
+
+        {resolved.map((amendment, i) => {
+          const accepted = amendment.changes.filter((c) => c.status === "accepted");
+          const hasHigh  = accepted.some((c) => c.riskLevel === "high");
+          return (
+            <div key={amendment.id} className="flex items-center shrink-0">
+              {/* Connector */}
+              <div className="flex flex-col items-center gap-0.5 mx-1 mt-4">
+                <ArrowRight size={14} className="text-[var(--fg-muted)]" />
+              </div>
+              {/* Amendment node */}
+              <div className="flex flex-col items-center gap-1 min-w-[90px]">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{
+                    backgroundColor: hasHigh ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
+                    border: `2px solid ${hasHigh ? "#ef4444" : "#10b981"}`,
+                    color: hasHigh ? "#ef4444" : "#10b981",
+                  }}>
+                  v{i + 2}
+                </div>
+                <p className="text-[9px] text-[var(--fg-muted)] text-center font-semibold uppercase tracking-wider truncate max-w-[88px]">
+                  {amendment.title.replace(/amendment/i, "Amend.").slice(0, 18)}
+                </p>
+                <p className="text-[9px] text-[var(--fg-muted)] text-center">
+                  {accepted.length} change{accepted.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Net change summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--border-subtle)]">
+        {[
+          { label: "Clauses Added",    value: netAdded,    Icon: TrendingUp,   color: "#10b981" },
+          { label: "Clauses Modified", value: netModified, Icon: RotateCcw,    color: "#f59e0b" },
+          { label: "Clauses Removed",  value: netRemoved,  Icon: TrendingDown, color: "#ef4444" },
+          { label: "High-Risk Changes",value: highRisk,    Icon: AlertTriangle,color: "#ef4444" },
+        ].map(({ label, value, Icon, color }) => (
+          <div key={label} className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <Icon size={10} style={{ color }} />
+              <p className="text-[9px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
+            </div>
+            <p className="text-lg font-bold font-mono" style={{ color: value > 0 ? color : "var(--fg-muted)" }}>
+              {value > 0 ? `+${value}` : value === 0 ? "—" : value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-[10px] text-[var(--fg-muted)]">
+        Net accepted changes from original SOW to current version.
+        {highRisk > 0 && (
+          <span className="ml-1 text-red-500 font-semibold">{highRisk} high-risk clause{highRisk !== 1 ? "s" : ""} were accepted — review carefully.</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export function AmendmentPanel({ contractId, initialAmendments }: {
@@ -577,6 +694,9 @@ export function AmendmentPanel({ contractId, initialAmendments }: {
           </button>
         )}
       </div>
+
+      {/* Evolution timeline — shown when there are resolved amendments */}
+      <EvolutionTimeline amendments={amendments} />
 
       {showUpload && (
         <UploadAmendmentForm

@@ -87,18 +87,24 @@ function SidebarContent({
 
       {/* Workspace badge */}
       <div className="px-4 pt-3 pb-2">
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-subtle)] px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fg-muted)] mb-0.5">
+        <div
+          className="rounded-xl px-3 py-2.5"
+          style={{
+            background:   "linear-gradient(135deg, rgba(0,114,229,0.18) 0%, rgba(117,216,252,0.10) 100%)",
+            border:       "1px solid rgba(0,114,229,0.3)",
+          }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "rgba(117,216,252,0.6)" }}>
             Workspace
           </p>
-          <p className="text-xs font-medium text-[var(--fg-secondary)] truncate">
+          <p className="text-xs font-semibold text-white truncate">
             Blue-IQ Govern
           </p>
           <span
-            className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full border"
-            style={{ backgroundColor: "rgba(0,114,229,0.12)", color: "#75D8FC", borderColor: "rgba(0,114,229,0.25)" }}
+            className="inline-flex items-center gap-1 mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+            style={{ backgroundColor: "rgba(0,114,229,0.25)", color: "#75D8FC", border: "1px solid rgba(117,216,252,0.3)" }}
           >
-            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#0072E5" }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0072E5]" />
             Pro Plan
           </span>
         </div>
