@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown, Minus, Activity, ShieldAlert, ShieldCheck,
-  EyeOff,
+  EyeOff, GitBranch,
 } from "lucide-react";
 import { type Clause } from "@/lib/mock-data";
 import { clauseTypeLabel, daysUntil, formatCurrency } from "@/lib/utils";
 import { redactPii } from "@/lib/pii";
 import { getPiiRedactionPref } from "./SettingsTabs";
 import { RiskBadge } from "./RiskBadge";
+import { ClauseAmendmentHistory } from "./ClauseDiffView";
 
 function usePiiRedaction(): boolean {
   const [on, setOn] = useState(false);
@@ -140,6 +141,16 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
                   {clauseTypeLabel(clause.type)}
                 </span>
                 <RiskBadge level={clause.riskLevel} />
+                {clause.isAmendedClause && (clause.amendmentHistory?.length ?? 0) > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
+                    style={{ color: "#5B8DEF", backgroundColor: "rgba(41,98,255,0.10)", borderColor: "rgba(41,98,255,0.35)" }}
+                    title="This clause was modified by an amendment"
+                  >
+                    <GitBranch size={9} />
+                    Amended v{clause.amendmentHistory![clause.amendmentHistory!.length - 1].amendmentVersion}
+                  </span>
+                )}
                 {favStyle && (
                   <span
                     className="inline-flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
@@ -201,7 +212,9 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
               {expanded && (
                 <div className="mt-3 p-3 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)]">
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Source text</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">
+                      {clause.isAmendedClause ? "Current text (post-amendment)" : "Source text"}
+                    </p>
                     {renderRaw.redacted > 0 && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[var(--fg-muted)]">
                         <EyeOff size={10} />{renderRaw.redacted} masked
@@ -211,6 +224,17 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
                   <p className="text-xs font-mono text-[var(--fg-secondary)] leading-relaxed whitespace-pre-wrap">
                     {renderRaw.text}
                   </p>
+                </div>
+              )}
+
+              {/* Amendment history — shown when clause has been amended */}
+              {clause.isAmendedClause && (clause.amendmentHistory?.length ?? 0) > 0 && (
+                <div className="mt-3">
+                  <ClauseAmendmentHistory
+                    history={clause.amendmentHistory!}
+                    originalText={clause.originalText ?? clause.rawText}
+                    currentText={clause.rawText}
+                  />
                 </div>
               )}
 

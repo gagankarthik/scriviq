@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, type DragEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useRef, useEffect, type DragEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileDiff, Plus, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Clock, AlertTriangle,
@@ -944,6 +944,19 @@ export function AmendmentPanel({
     initialConflicts ?? detectAmendmentConflicts(withDerivedVersions(initialAmendments))
   );
   const [showUpload, setShowUpload] = useState(false);
+
+  // Auto-open the upload form when arriving via ?upload=amendment
+  // (used by the smart project upload redirect)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("upload") === "amendment") {
+      setShowUpload(true);
+      // Scroll into view so the form is immediately visible
+      requestAnimationFrame(() => {
+        document.getElementById("amendments")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [searchParams]);
 
   const maxVersion = amendments.length
     ? Math.max(1, ...amendments.map((a) => a.version ?? 1))

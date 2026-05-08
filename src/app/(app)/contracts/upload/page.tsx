@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Brain, ShieldCheck, Bell, FolderOpen } from "lucide-react";
 import { ContractUploader } from "@/components/domain/ContractUploader";
 import { getSession } from "@/lib/auth/session";
-import { dbGetProject } from "@/lib/aws/contracts";
+import { dbGetProject, dbListContracts } from "@/lib/aws/contracts";
 
 const INFO_ITEMS = [
   { Icon: Brain,      title: "13 clause types",  desc: "Payment, renewal, IP, termination, and more" },
@@ -13,15 +14,31 @@ const INFO_ITEMS = [
 export default async function UploadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ projectId?: string }>;
+  searchParams: Promise<{ projectId?: string; force?: string }>;
 }) {
-  const { projectId } = await searchParams;
+  const { projectId, force } = await searchParams;
   const session       = await getSession();
   const workspace     = session?.workspace ?? "";
 
   let project = null;
   if (projectId) {
     try { project = await dbGetProject(workspace, projectId); } catch {}
+  }
+
+  // ── Auto-amendment routing ───────────────────────────────────────────────
+  // If user is uploading into a project that already has a v1 document, send
+  // them to that document's amendment upload (it becomes v2, v3, v4...).
+  // `?force=new` overrides this for the rare case the user explicitly wants
+  // a brand-new master document in the same project.
+  if (project && projectId && force !== "new") {
+    const existing = await dbListContracts(workspace, { projectId }).catch(() => []);
+    if (existing.length > 0) {
+      // Master = oldest contract in the project
+      const master = [...existing].sort(
+        (a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+      )[0];
+      redirect(`/contracts/${master.id}?upload=amendment#amendments`);
+    }
   }
 
   return (
@@ -48,10 +65,12 @@ export default async function UploadPage({
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-[var(--fg-primary)] tracking-tight">
-          Upload {project ? "SOW" : "Contract"}
+          {project ? `Upload v1 to ${project.name}` : "Upload contract"}
         </h1>
         <p className="text-sm text-[var(--fg-muted)] mt-1">
-          Blue-IQ Govern extracts every clause in ~15 seconds.
+          {project
+            ? "This will be the master document. Future uploads to this project become amendments (v2, v3, …)."
+            : "Scriviq extracts every clause in ~15 seconds."}
         </p>
       </div>
 

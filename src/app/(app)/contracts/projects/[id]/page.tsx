@@ -4,7 +4,8 @@ import {
   ArrowLeft, Upload, FileText, DollarSign, ShieldAlert, Clock,
   GitBranch, GitMerge, Layers, ScrollText, AlertCircle,
   TrendingUp, AlertTriangle, ShieldCheck, Lock, CalendarClock,
-  CheckCircle2, ArrowRight, Loader2,
+  CheckCircle2, ArrowRight, Loader2, FilePlus, FileDiff,
+  CheckSquare, Eye,
 } from "lucide-react";
 import {
   dbGetProject, dbListContracts, dbListClauses, dbListAmendments,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/utils";
 import { ProjectDocumentRail, type DocRailItem } from "@/components/domain/ProjectDocumentRail";
 import { ProjectDocumentIntelligence } from "@/components/domain/ProjectDocumentIntelligence";
+import { DeleteProjectButton } from "@/components/domain/DeleteProjectButton";
 import type {
   Contract, Clause, Amendment, ActivityEvent, AmendmentConflict,
 } from "@/lib/mock-data";
@@ -408,7 +410,8 @@ function DocumentMatrix({ items }: { items: DocRailItem[] }) {
               <th className="text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-3 py-2.5">Risk</th>
               <th className="text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-3 py-2.5">Conflicts</th>
               <th className="text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-3 py-2.5">Due Soon</th>
-              <th className="text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-5 py-2.5">Status</th>
+              <th className="text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-3 py-2.5">Status</th>
+              <th className="text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] px-5 py-2.5">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -470,10 +473,29 @@ function DocumentMatrix({ items }: { items: DocRailItem[] }) {
                       <span className="text-[10px] font-mono text-[var(--fg-muted)]">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-3 py-3 text-center">
                     {c.status === "ready" && <CheckCircle2 size={12} className="inline text-emerald-500" />}
                     {c.status === "processing" && <Loader2 size={12} className="inline text-[#0072E5] animate-spin" />}
                     {c.status === "error" && <AlertCircle size={12} className="inline text-red-500" />}
+                  </td>
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                    {c.status === "ready" ? (
+                      <Link
+                        href={`/contracts/${c.id}#amendments`}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors"
+                        style={{
+                          color: "#5B8DEF",
+                          backgroundColor: "rgba(41,98,255,0.08)",
+                          border: "1px solid rgba(41,98,255,0.25)",
+                        }}
+                        title="Upload an amendment to this document"
+                      >
+                        <FileDiff size={10} strokeWidth={2} />
+                        Amend
+                      </Link>
+                    ) : (
+                      <span className="text-[10px] font-mono text-[var(--fg-muted)]">—</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -618,10 +640,20 @@ export default async function ProjectPage({
                 href={`/contracts/upload?projectId=${id}`}
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-white text-sm font-semibold transition-all"
                 style={{ backgroundColor: "#0072E5" }}
+                title={
+                  allContracts.length === 0
+                    ? "Upload the first SOW into this project (becomes v1)"
+                    : "Upload an amendment — automatically becomes v" + (1 + Math.max(1, ...railItems.map((r) => r.latestVersion)))
+                }
               >
-                <Upload size={13} strokeWidth={2} />
-                Upload
+                <FilePlus size={13} strokeWidth={2} />
+                {allContracts.length === 0 ? "Upload v1" : "Upload amendment"}
               </Link>
+              <DeleteProjectButton
+                projectId={id}
+                projectName={project.name}
+                contractCount={allContracts.length}
+              />
             </div>
           </div>
         </div>
@@ -663,6 +695,72 @@ export default async function ProjectPage({
                     <p className="text-xs text-red-600 dark:text-red-400">
                       Two or more pending amendments touch the same clauses. Resolve before applying.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* How it works — explainer card for first-time users */}
+              {(allContracts.length <= 2 || aggregate.totalAmendments === 0) && (
+                <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] overflow-hidden">
+                  <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center gap-2">
+                    <Eye size={13} className="text-[#0072E5] dark:text-[#75D8FC]" />
+                    <h3 className="text-xs font-semibold text-[var(--fg-primary)]">How this project works</h3>
+                    <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)]">
+                      4-step lifecycle
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)]">
+                    {[
+                      {
+                        step: "1",
+                        Icon: FilePlus,
+                        title: "Upload a document",
+                        body: "Add a new SOW, retainer, or change order. The AI extracts every clause in ~15 seconds.",
+                        cta: "+ New document",
+                        href: `/contracts/upload?projectId=${id}`,
+                      },
+                      {
+                        step: "2",
+                        Icon: FileDiff,
+                        title: "Upload an amendment",
+                        body: "Open a document below, then upload the revised version. The AI diffs it clause-by-clause.",
+                        cta: null,
+                        href: null,
+                      },
+                      {
+                        step: "3",
+                        Icon: CheckSquare,
+                        title: "Review & apply",
+                        body: "Accept or reject each change. Original text is preserved for audit; the document updates to a new version.",
+                        cta: null,
+                        href: null,
+                      },
+                      {
+                        step: "4",
+                        Icon: GitBranch,
+                        title: "See changes",
+                        body: "Amended clauses get a marker — click any one to see the original-vs-current diff and full history.",
+                        cta: null,
+                        href: null,
+                      },
+                    ].map(({ step, Icon, title, body, cta, href }) => (
+                      <div key={step} className="p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono"
+                            style={{ backgroundColor: "rgba(41,98,255,0.10)", color: "#5B8DEF", border: "1px solid rgba(41,98,255,0.25)" }}>
+                            {step}
+                          </span>
+                          <Icon size={13} className="text-[var(--fg-muted)]" />
+                          <p className="text-xs font-semibold text-[var(--fg-primary)]">{title}</p>
+                        </div>
+                        <p className="text-[11px] text-[var(--fg-secondary)] leading-relaxed">{body}</p>
+                        {cta && href && (
+                          <Link href={href} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[#0072E5] dark:text-[#75D8FC] hover:underline">
+                            {cta} <ArrowRight size={10} />
+                          </Link>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

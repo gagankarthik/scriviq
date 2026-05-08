@@ -64,7 +64,7 @@ export default function SignupPage() {
     <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
-        <Image src="/logo.png" alt="Blue-IQ Govern" width={130} height={30} />
+        <Image src="/logo.png" alt="Scriviq" width={130} height={30} />
       </div>
 
       <h1 className="text-xl font-semibold text-[var(--fg-primary)] mb-1">

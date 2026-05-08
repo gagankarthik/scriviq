@@ -65,6 +65,22 @@ export interface Contract {
   budgetRate?: number;
 }
 
+export interface ClauseAmendmentEntry {
+  amendmentId:      string;
+  amendmentVersion: number;
+  amendmentTitle:   string;
+  changeType:       "added" | "modified" | "removed";
+  /** Text BEFORE this amendment was applied (null for additions). */
+  previousText:     string | null;
+  /** Text AFTER this amendment was applied (null for removals). */
+  newText:          string | null;
+  /** Risk level set by this amendment. */
+  riskLevel:        RiskLevel;
+  riskReason:       string | null;
+  appliedAt:        string;
+  appliedBy?:       string;
+}
+
 export interface Clause {
   id: string;
   contractId: string;
@@ -80,6 +96,12 @@ export interface Clause {
   status: ClauseStatus;
   tags: string[];
   complianceFlags?: string[];
+  /** The very first/extracted text — preserved across amendments. */
+  originalText?:     string;
+  /** Set on first amendment. Quick flag for UI. */
+  isAmendedClause?:  boolean;
+  /** Chronological list of every amendment applied to this clause. */
+  amendmentHistory?: ClauseAmendmentEntry[];
 }
 
 export interface ComplianceRule {

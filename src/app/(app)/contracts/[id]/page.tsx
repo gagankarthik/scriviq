@@ -422,6 +422,87 @@ export default async function ContractDetailPage({
         </div>
       </div>
 
+      {/* Amendment lifecycle strip — clear "where is this document at?" */}
+      {(() => {
+        const latestVersion = amendments.length
+          ? Math.max(1, ...amendments.map((a) => a.version ?? 1))
+          : 1;
+        const resolved = amendments.filter((a) => a.status === "resolved");
+        const lastApplied = resolved
+          .map((a) => a.appliedAt ?? a.uploadedAt)
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+        const amendedClausesCount = clauses.filter((c) => c.isAmendedClause).length;
+
+        return (
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] overflow-hidden">
+            <div className="px-5 py-3 border-b border-[var(--border-subtle)] flex items-center gap-2">
+              <GitBranch size={13} className="text-[#0072E5] dark:text-[#75D8FC]" />
+              <p className="text-xs font-semibold text-[var(--fg-primary)]">Document lifecycle</p>
+              <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)]">
+                read me first
+              </span>
+            </div>
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)] mb-1">Current version</p>
+                <p className="text-lg font-bold tnum text-[var(--fg-primary)]">v{latestVersion}</p>
+                <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">
+                  {latestVersion === 1 ? "Original SOW" : `Original + ${latestVersion - 1} amendment${latestVersion - 1 !== 1 ? "s" : ""}`}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)] mb-1">Amendments applied</p>
+                <p className="text-lg font-bold tnum text-[var(--fg-primary)]">{resolved.length}</p>
+                {pendingAmendments > 0 && (
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
+                    + {pendingAmendments} pending review
+                  </p>
+                )}
+                {pendingAmendments === 0 && resolved.length === 0 && (
+                  <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">No amendments yet</p>
+                )}
+              </div>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)] mb-1">Clauses changed</p>
+                <p className="text-lg font-bold tnum" style={{ color: amendedClausesCount > 0 ? "#5B8DEF" : "var(--fg-primary)" }}>
+                  {amendedClausesCount}
+                </p>
+                <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">
+                  {amendedClausesCount > 0 ? "marked in clause list below" : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--fg-muted)] mb-1">Last update</p>
+                <p className="text-lg font-bold tnum text-[var(--fg-primary)]">
+                  {lastApplied
+                    ? new Date(lastApplied).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : "—"}
+                </p>
+                <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">
+                  {lastApplied
+                    ? new Date(lastApplied).toLocaleDateString("en-US", { year: "numeric" })
+                    : "Original only"}
+                </p>
+              </div>
+            </div>
+            <div className="px-5 py-2.5 border-t border-[var(--border-subtle)] bg-[var(--surface-subtle)]/40 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-[var(--fg-secondary)]">
+                {amendments.length === 0
+                  ? <>Upload an amendment to track scope changes — the AI will diff it against the current contract and let you accept or reject each change.</>
+                  : <>Amended clauses are marked with <span className="inline-flex items-center gap-0.5 text-[10px] font-mono uppercase tracking-wider px-1 py-0.5 rounded mx-0.5" style={{ color: "#5B8DEF", backgroundColor: "rgba(41,98,255,0.10)", border: "1px solid rgba(41,98,255,0.25)" }}><GitBranch size={9} />Amended</span> below — click any clause to see the original-vs-current diff.</>
+                }
+              </p>
+              <a
+                href="#amendments"
+                className="text-[11px] font-medium text-[#0072E5] dark:text-[#75D8FC] hover:underline shrink-0 inline-flex items-center gap-1 whitespace-nowrap"
+              >
+                {amendments.length === 0 ? "Upload amendment →" : "View amendments →"}
+              </a>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Sticky section nav */}
       <SectionNav
         hasAmendments={amendments.length > 0}

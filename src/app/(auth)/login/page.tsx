@@ -56,7 +56,7 @@ function LoginInner() {
     <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 shadow-xl">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
-        <Image src="/logo.png" alt="Blue-IQ Govern" width={130} height={30} />
+        <Image src="/logo.png" alt="Scriviq" width={130} height={30} />
       </div>
 
       <h1 className="text-xl font-bold text-[var(--fg-primary)] mb-1">Welcome back</h1>
@@ -126,7 +126,7 @@ function LoginInner() {
       </form>
 
       <p className="text-center text-sm text-[var(--fg-muted)] mt-6">
-        New to Blue-IQ Govern?{" "}
+        New to Scriviq?{" "}
         <Link href="/signup" className="text-[#0072E5] dark:text-[#75D8FC] hover:underline font-semibold">
           Start free trial →
         </Link>

@@ -7,7 +7,9 @@ import {
 } from "@/lib/aws/contracts";
 import { detectAmendmentConflicts, withDerivedVersions } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
-import type { ClauseChangeStatus } from "@/lib/mock-data";
+import type {
+  ClauseChangeStatus, ClauseAmendmentEntry, Clause,
+} from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
 
@@ -33,35 +35,77 @@ export async function PATCH(
       status: statusMap[c.id] ?? c.status,
     }));
 
-    // Apply accepted changes to the live contract
-    const clauses = await dbListClauses(session.workspace, id);
+    // Apply accepted changes to the live contract — preserves originals + history
+    const clauses   = await dbListClauses(session.workspace, id);
     const clauseMap = Object.fromEntries(clauses.map((c) => [c.id, c]));
+    const now            = new Date().toISOString();
+    const actor          = session.email ?? session.userId;
+    const version        = amendment.version ?? 1;
+    const amendmentId_   = amendment.id;
+    const amendmentTitle = amendment.title;
+
+    function makeHistoryEntry(
+      change: typeof updatedChanges[number],
+      previousText: string | null,
+    ): ClauseAmendmentEntry {
+      return {
+        amendmentId:      amendmentId_,
+        amendmentVersion: version,
+        amendmentTitle,
+        changeType:       change.changeType,
+        previousText,
+        newText:          change.newText,
+        riskLevel:        change.riskLevel,
+        riskReason:       change.riskReason,
+        appliedAt:        now,
+        appliedBy:        actor,
+      };
+    }
 
     await Promise.all(updatedChanges.map(async (change) => {
       if (change.status !== "accepted") return;
 
       if (change.changeType === "removed" && change.clauseId) {
-        await dbUpdateClauseStatus(session.workspace, id, change.clauseId, "expired");
+        const orig = clauseMap[change.clauseId];
+        if (orig) {
+          // Preserve clause record, mark expired, append history
+          const history = [...(orig.amendmentHistory ?? []), makeHistoryEntry(change, orig.rawText)];
+          await dbPutClause(session.workspace, {
+            ...orig,
+            status:           "expired",
+            isAmendedClause:  true,
+            originalText:     orig.originalText ?? orig.rawText,
+            amendmentHistory: history,
+          });
+        } else {
+          await dbUpdateClauseStatus(session.workspace, id, change.clauseId, "expired");
+        }
 
       } else if (change.changeType === "modified" && change.clauseId && change.newText) {
         const orig = clauseMap[change.clauseId];
         if (orig) {
+          const history = [...(orig.amendmentHistory ?? []), makeHistoryEntry(change, orig.rawText)];
+          // Strip any prior "[Amended]" prefix to avoid accumulation
+          const cleanSummary = orig.summary.replace(/^(\[Amended\]\s*)+/, "");
           await dbPutClause(session.workspace, {
             ...orig,
-            rawText: change.newText,
-            summary: `[Amended] ${orig.summary}`,
-            riskLevel: change.riskLevel,
-            riskReason: change.riskReason,
+            rawText:          change.newText,
+            summary:          `[v${version}] ${cleanSummary}`,
+            riskLevel:        change.riskLevel,
+            riskReason:       change.riskReason,
+            isAmendedClause:  true,
+            originalText:     orig.originalText ?? orig.rawText,
+            amendmentHistory: history,
           });
         }
 
       } else if (change.changeType === "added" && change.newText) {
-        await dbPutClause(session.workspace, {
+        const newClause: Clause = {
           id:         `${change.id}-clause`,
           contractId: id,
           type:       "scope_change",
           title:      change.title,
-          summary:    `Added via amendment: ${change.title}`,
+          summary:    `Added by amendment v${version}`,
           rawText:    change.newText,
           dueDate:    null,
           amount:     null,
@@ -69,18 +113,21 @@ export async function PATCH(
           riskLevel:  change.riskLevel,
           riskReason: change.riskReason,
           status:     "active",
-          tags:       ["amendment"],
-        });
+          tags:       ["amendment", `v${version}`],
+          isAmendedClause:  true,
+          originalText:     "",
+          amendmentHistory: [makeHistoryEntry(change, null)],
+        };
+        await dbPutClause(session.workspace, newClause);
       }
     }));
 
-    const now      = new Date().toISOString();
     const resolved = {
       ...amendment,
       changes:    updatedChanges,
       status:     "resolved" as const,
       appliedAt:  now,
-      resolvedBy: session.email ?? session.userId,
+      resolvedBy: actor,
     };
     await dbPutAmendment(session.workspace, resolved);
 

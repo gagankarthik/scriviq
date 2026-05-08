@@ -258,7 +258,12 @@ function Eyebrow({ children, light }: { children: React.ReactNode; light?: boole
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default function HomePage() {
+import { getSession } from "@/lib/auth/session";
+
+export default async function HomePage() {
+  const session  = await getSession();
+  const loggedIn = !!session;
+  const userName = session?.name?.split(" ")[0];
   return (
     <div className={playfair.variable} style={{ backgroundColor: BG, color: INK }}>
 
@@ -379,11 +384,24 @@ export default function HomePage() {
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/login" style={{ color: INK_2, fontSize: 14, fontWeight: 500 }}
-              className="hidden sm:block hover:opacity-60 transition-opacity">Sign in</Link>
-            <Link href="/signup" className="btn-ink" style={{ padding: "9px 18px", fontSize: 13 }}>
-              Start free trial <ArrowRight size={13} />
-            </Link>
+            {loggedIn ? (
+              <>
+                <span style={{ color: INK_3, fontSize: 12, fontWeight: 500 }} className="hidden sm:inline">
+                  Signed in{userName ? ` as ${userName}` : ""}
+                </span>
+                <Link href="/dashboard" className="btn-ink" style={{ padding: "9px 18px", fontSize: 13 }}>
+                  Open dashboard <ArrowRight size={13} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={{ color: INK_2, fontSize: 14, fontWeight: 500 }}
+                  className="hidden sm:block hover:opacity-60 transition-opacity">Sign in</Link>
+                <Link href="/signup" className="btn-ink" style={{ padding: "9px 18px", fontSize: 13 }}>
+                  Start free trial <ArrowRight size={13} />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -421,8 +439,17 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-wrap items-center gap-3 mb-7">
-                <Link href="/signup" className="btn-ink">Start free trial <ArrowRight size={15} /></Link>
-                <a href="#how-it-works" className="btn-ghost">See how it works</a>
+                {loggedIn ? (
+                  <>
+                    <Link href="/dashboard" className="btn-ink">Open dashboard <ArrowRight size={15} /></Link>
+                    <Link href="/contracts" className="btn-ghost">View contracts</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/signup" className="btn-ink">Start free trial <ArrowRight size={15} /></Link>
+                    <a href="#how-it-works" className="btn-ghost">See how it works</a>
+                  </>
+                )}
               </div>
 
               {/* Social proof strip */}
