@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown, Minus, Activity, ShieldAlert, ShieldCheck,
+  EyeOff,
 } from "lucide-react";
 import { type Clause } from "@/lib/mock-data";
 import { clauseTypeLabel, daysUntil, formatCurrency } from "@/lib/utils";
+import { redactPii } from "@/lib/pii";
+import { getPiiRedactionPref } from "./SettingsTabs";
 import { RiskBadge } from "./RiskBadge";
+
+function usePiiRedaction(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    setOn(getPiiRedactionPref());
+    function handler(e: Event) {
+      setOn((e as CustomEvent<boolean>).detail);
+    }
+    window.addEventListener("scriviq:pii-pref-changed", handler);
+    return () => window.removeEventListener("scriviq:pii-pref-changed", handler);
+  }, []);
+  return on;
+}
 
 // ── Confidence ────────────────────────────────────────────────────────────────
 
@@ -60,6 +76,7 @@ interface ClauseRowProps {
 
 export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowProps) {
   const [expanded, setExpanded] = useState(reviewMode);
+  const piiRedact = usePiiRedaction();
 
   useEffect(() => { setExpanded(reviewMode); }, [reviewMode]);
 
@@ -69,6 +86,13 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
   const confidence  = inferConfidence(clause);
   const favStyle    = inferFavorability(clause);
   const confStyle   = CONFIDENCE_STYLES[confidence];
+
+  const renderRaw = useMemo(() => {
+    const text = clause.rawText ?? "";
+    if (!piiRedact) return { text, redacted: 0 };
+    const r = redactPii(text);
+    return { text: r.text, redacted: r.total };
+  }, [clause.rawText, piiRedact]);
 
   return (
     <div className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] hover:border-[rgba(0,114,229,0.25)] transition-all duration-150 overflow-hidden">
@@ -88,8 +112,14 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
               </span>
             </div>
             <p className="text-xs font-mono text-[var(--fg-secondary)] leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
-              {clause.rawText || "—"}
+              {renderRaw.text || "—"}
             </p>
+            {renderRaw.redacted > 0 && (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-mono text-[var(--fg-muted)]">
+                <EyeOff size={10} />
+                {renderRaw.redacted} PII item{renderRaw.redacted !== 1 ? "s" : ""} masked
+              </p>
+            )}
           </div>
           {/* Right: extracted data */}
           <div className="p-4">
@@ -170,9 +200,16 @@ export function ClauseRow({ clause, onAction, reviewMode = false }: ClauseRowPro
 
               {expanded && (
                 <div className="mt-3 p-3 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)]">
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--fg-muted)] mb-1.5">Source text</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--fg-muted)]">Source text</p>
+                    {renderRaw.redacted > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[var(--fg-muted)]">
+                        <EyeOff size={10} />{renderRaw.redacted} masked
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs font-mono text-[var(--fg-secondary)] leading-relaxed whitespace-pre-wrap">
-                    {clause.rawText}
+                    {renderRaw.text}
                   </p>
                 </div>
               )}

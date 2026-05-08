@@ -3,24 +3,27 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Bell, Sun, Moon, Search, LogOut } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSidebar } from "./SidebarContext";
 import { useTheme } from "./ThemeProvider";
 import { SearchPanel } from "./SearchPanel";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard":         "Dashboard",
+  "/dashboard":         "Overview",
   "/contracts":         "Contracts",
-  "/contracts/upload":  "Upload Contract",
+  "/contracts/upload":  "Upload",
+  "/templates":         "Templates",
   "/alerts":            "Alerts",
+  "/audit":             "Audit Log",
   "/team":              "Team",
   "/settings":          "Settings",
 };
 
 function getPageTitle(path: string): string {
   if (PAGE_TITLES[path]) return PAGE_TITLES[path];
-  if (path.startsWith("/contracts/")) return "Contract Detail";
-  return "Blue-IQ Govern";
+  if (path.startsWith("/contracts/projects/")) return "Project";
+  if (path.startsWith("/contracts/"))           return "Contract";
+  return "Scriviq";
 }
 
 function getInitials(name: string): string {
@@ -50,6 +53,17 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   async function handleLogout() {
     setLoggingOut(true);
     try {
@@ -75,18 +89,30 @@ export function TopNav({ pendingAlertCount = 0, user }: TopNavProps) {
         </button>
 
         {/* Page title */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[15px] font-semibold text-[var(--fg-primary)] truncate">
+        <div className="flex-1 min-w-0 flex items-center gap-3">
+          <h1 className="text-[15px] font-semibold text-[var(--fg-primary)] truncate tracking-tight">
             {getPageTitle(path)}
           </h1>
         </div>
 
+        {/* Inline search trigger */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="hidden md:flex items-center gap-2 w-72 px-3 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--surface-elevated)] text-[var(--fg-muted)] hover:border-[rgba(41,98,255,0.3)] transition-all"
+        >
+          <Search size={12} strokeWidth={1.75} />
+          <span className="text-xs flex-1 text-left">Search…</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[var(--fg-muted)]">
+            ⌘K
+          </kbd>
+        </button>
+
         {/* Right actions */}
         <div className="flex items-center gap-1.5">
-          {/* Search */}
+          {/* Search (mobile only) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden sm:flex p-2 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)] transition-colors"
+            className="md:hidden p-2 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)] transition-colors"
             aria-label="Search"
           >
             <Search size={16} strokeWidth={1.75} />

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { dbGetContract, dbUpdateContract, dbPutApproval, dbPutActivity } from "@/lib/aws/contracts";
+import { dbGetContract, dbUpdateContract, dbPutApproval } from "@/lib/aws/contracts";
+import { logAudit } from "@/lib/audit";
 import type { ApprovalStep } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
@@ -36,13 +37,15 @@ export async function POST(
       approvers:      body.approvers.map((a) => a.email),
     });
 
-    await dbPutActivity(session.workspace, {
-      id:          `activity-${Date.now()}`,
-      type:        "clause_actioned",
-      description: `${contract.title} submitted for approval to ${body.approvers.map((a) => a.name).join(", ")}`,
+    await logAudit({
+      type:        "approval_submitted",
+      description: `Submitted "${contract.title}" for approval to ${body.approvers.map((a) => a.name).join(", ")}`,
       contractId:  id,
-      timestamp:   new Date().toISOString(),
-    }).catch(() => {});
+      workspace:   session.workspace,
+      actorEmail:  session.email,
+      actorName:   session.name,
+      meta:        { approverEmails: body.approvers.map((a) => a.email).join(",") },
+    });
 
     return Response.json({ steps });
   } catch (err) {

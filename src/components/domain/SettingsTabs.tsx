@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2, CreditCard, User, Bell, Shield,
   FileText, AlertTriangle, TrendingUp, Clock,
   LayoutDashboard, FolderOpen, Upload, ArrowRight, Building2,
   ShieldAlert, DollarSign, FileCheck2,
+  Download, Trash2, EyeOff, Lock, Loader2,
 } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 import { ComplianceRulesPanel } from "./ComplianceRulesPanel";
 
-type Tab = "workspace" | "profile" | "notifications" | "billing" | "compliance";
+type Tab = "workspace" | "profile" | "notifications" | "billing" | "compliance" | "privacy";
+
+const PII_PREF_KEY = "scriviq.pii.redact";
+
+export function getPiiRedactionPref(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(PII_PREF_KEY) === "1";
+}
+
+export function setPiiRedactionPref(on: boolean) {
+  if (typeof window === "undefined") return;
+  if (on) window.localStorage.setItem(PII_PREF_KEY, "1");
+  else    window.localStorage.removeItem(PII_PREF_KEY);
+  window.dispatchEvent(new CustomEvent("scriviq:pii-pref-changed", { detail: on }));
+}
 
 export interface SettingsUser  { name: string; email: string }
 export interface SettingsStats {
@@ -356,6 +371,189 @@ function BillingPanel() {
   );
 }
 
+// ── Privacy & data panel ──────────────────────────────────────────────────────
+
+function PrivacyPanel() {
+  const [redactPii,    setRedactPii]    = useState(false);
+  const [exporting,    setExporting]    = useState(false);
+  const [exportError,  setExportError]  = useState("");
+  const [deleting,     setDeleting]     = useState(false);
+  const [deleteError,  setDeleteError]  = useState("");
+  const [showDeleteUi, setShowDeleteUi] = useState(false);
+  const [confirmText,  setConfirmText]  = useState("");
+
+  useEffect(() => {
+    setRedactPii(getPiiRedactionPref());
+  }, []);
+
+  async function handleExport() {
+    setExporting(true);
+    setExportError("");
+    try {
+      const res = await fetch("/api/workspace/export");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Export failed");
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url;
+      a.download = `scriviq-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (confirmText !== "DELETE") return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/workspace/delete", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ confirm: "DELETE" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Delete failed");
+      }
+      // Session cookies cleared server-side — redirect home
+      window.location.href = "/";
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Delete failed");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      {/* Header */}
+      <div className="flex items-start gap-3 px-5 py-4 rounded-2xl border border-[rgba(0,114,229,0.2)] bg-[rgba(0,114,229,0.05)]">
+        <Lock size={16} style={{ color: "#0072E5" }} className="mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-[var(--fg-primary)]">GDPR &amp; Data Privacy</p>
+          <p className="text-xs text-[var(--fg-muted)] mt-0.5 leading-relaxed">
+            Your data is encrypted at rest in AWS DynamoDB and S3, scoped to your workspace, and never shared. The controls below let you exercise your right to access (export) and right to erasure (delete).
+          </p>
+        </div>
+      </div>
+
+      {/* PII redaction toggle */}
+      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] px-5 divide-y divide-[var(--border-subtle)]">
+        <div className="py-3 flex items-center gap-2">
+          <EyeOff size={13} className="text-[var(--fg-muted)]" />
+          <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">PII Redaction</p>
+        </div>
+        <Toggle
+          label="Mask personal data in clause text"
+          sub="Auto-redacts emails, phone numbers, SSNs, credit cards, and IPs from rendered clauses. Storage is unaffected."
+          checked={redactPii}
+          onChange={(v) => { setRedactPii(v); setPiiRedactionPref(v); }}
+        />
+      </div>
+
+      {/* Data export */}
+      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Download size={13} style={{ color: "#0072E5" }} />
+              <p className="text-sm font-semibold text-[var(--fg-primary)]">Export workspace data</p>
+            </div>
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed max-w-md">
+              Download every contract, clause, amendment, project, alert, template, compliance rule, and audit log entry as a single JSON file.
+            </p>
+          </div>
+          <Button onClick={handleExport} loading={exporting} size="sm">
+            <Download size={13} />
+            {exporting ? "Preparing…" : "Download JSON"}
+          </Button>
+        </div>
+        {exportError && <p className="text-xs text-red-500 mt-2">{exportError}</p>}
+      </div>
+
+      {/* Data retention info */}
+      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Shield size={13} className="text-[var(--fg-muted)]" />
+          <p className="text-xs font-semibold text-[var(--fg-muted)] uppercase tracking-wider">Data Storage &amp; Retention</p>
+        </div>
+        <ul className="space-y-2 text-xs text-[var(--fg-secondary)]">
+          {[
+            "Contracts and clauses are stored in AWS DynamoDB with encryption at rest",
+            "Original documents are stored in AWS S3 with server-side encryption (SSE-S3)",
+            "Audit logs are append-only — no edits or deletions, only erasure as part of full workspace delete",
+            "Sessions are managed via httpOnly secure cookies (1-hour access token, 30-day refresh)",
+            "All data is scoped to your workspace (Cognito-issued user ID); no cross-tenant access",
+          ].map((line) => (
+            <li key={line} className="flex items-start gap-2">
+              <CheckCircle2 size={11} className="mt-0.5 shrink-0" style={{ color: "#10b981" }} />
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Right to erasure (Danger Zone) */}
+      <div className="rounded-2xl border border-red-200 dark:border-red-900/25 bg-red-50 dark:bg-red-950/10 p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Trash2 size={13} className="text-red-600 dark:text-red-400" />
+          <p className="text-sm font-semibold text-red-600 dark:text-red-400">Right to erasure</p>
+        </div>
+        <p className="text-xs text-[var(--fg-secondary)] mb-3 leading-relaxed">
+          Permanently delete every record we hold for your workspace — contracts, clauses, amendments, audit log, projects, templates, rules. This action is immediate and cannot be undone.
+        </p>
+        {!showDeleteUi ? (
+          <button
+            onClick={() => setShowDeleteUi(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border border-red-300 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all"
+          >
+            <Trash2 size={12} />Delete all my data
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-red-700 dark:text-red-300">
+              Type <span className="font-mono bg-red-100 dark:bg-red-950/40 px-1 rounded">DELETE</span> below to confirm.
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full max-w-xs rounded-lg border border-red-300 dark:border-red-900/40 bg-white dark:bg-[var(--surface-subtle)] px-3 py-2 text-sm font-mono text-[var(--fg-primary)] focus:outline-none focus:ring-2 focus:ring-red-500/30"
+            />
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={handleDelete}
+                disabled={confirmText !== "DELETE" || deleting}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleting && <Loader2 size={12} className="animate-spin" />}
+                {deleting ? "Deleting…" : "Permanently delete"}
+              </button>
+              <button
+                onClick={() => { setShowDeleteUi(false); setConfirmText(""); setDeleteError(""); }}
+                className="text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            {deleteError && <p className="text-xs text-red-500">{deleteError}</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Tabs shell ────────────────────────────────────────────────────────────────
 
 export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: SettingsStats }) {
@@ -367,6 +565,7 @@ export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: Setti
     { value: "notifications", label: "Notifications", Icon: Bell       },
     { value: "billing",       label: "Billing",       Icon: CreditCard },
     { value: "compliance",    label: "Compliance",    Icon: Shield     },
+    { value: "privacy",       label: "Privacy & Data",Icon: Lock       },
   ];
 
   return (
@@ -398,6 +597,7 @@ export function SettingsTabs({ user, stats }: { user: SettingsUser; stats: Setti
       {tab === "notifications" && <NotificationsPanel />}
       {tab === "billing"       && <BillingPanel />}
       {tab === "compliance"    && <ComplianceRulesPanel />}
+      {tab === "privacy"       && <PrivacyPanel />}
     </div>
   );
 }

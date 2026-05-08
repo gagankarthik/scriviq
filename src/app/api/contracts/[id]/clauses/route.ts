@@ -6,6 +6,7 @@ import {
   dbUpdateContract,
 } from "@/lib/aws/contracts";
 import { computeRiskScore } from "@/lib/utils";
+import { logAudit } from "@/lib/audit";
 import type { Clause, RiskLevel } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,17 @@ export async function PATCH(
     await dbUpdateContract(session.workspace, id, {
       riskScore,
       clauseCount: activeClauses.length,
+    });
+
+    const clauseTitle = allClauses.find((c) => c.id === body.clauseId)?.title ?? body.clauseId;
+    await logAudit({
+      type:        "clause_actioned",
+      description: `Marked clause "${clauseTitle}" as ${body.status}`,
+      contractId:  id,
+      workspace:   session.workspace,
+      actorEmail:  session.email,
+      actorName:   session.name,
+      meta:        { clauseId: body.clauseId, status: body.status },
     });
 
     return Response.json({ ok: true, riskScore, clauseCount: activeClauses.length });

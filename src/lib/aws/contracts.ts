@@ -227,6 +227,24 @@ export async function dbListActivity(
   return (result.Items ?? []) as ActivityEvent[];
 }
 
+export async function dbListContractActivity(
+  workspace: string,
+  contractId: string,
+  limit = 100
+): Promise<ActivityEvent[]> {
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      ExpressionAttributeValues: { ":pk": workspace, ":prefix": "ACTIVITY#" },
+      ScanIndexForward: false,
+      Limit: Math.max(limit * 4, 50),
+    })
+  );
+  const items = (result.Items ?? []) as ActivityEvent[];
+  return items.filter((e) => e.contractId === contractId).slice(0, limit);
+}
+
 export async function dbPutActivity(
   workspace: string,
   event: ActivityEvent
@@ -628,6 +646,51 @@ export async function dbPutSowAnalysis(
       Item: { ...analysis, PK: workspace, SK: `SOWANALYSIS#${analysis.contractId}` },
     })
   );
+}
+
+// ── GDPR purge ────────────────────────────────────────────────────────────────
+
+/**
+ * Delete every record under the workspace partition AND every nested
+ * `${workspace}#CONTRACT#${id}` sub-partition (clauses, amendments, approvals,
+ * timesheets). This is a destructive operation used for GDPR erasure.
+ *
+ * Returns the count of items deleted.
+ */
+export async function dbPurgeWorkspace(workspace: string): Promise<number> {
+  let deleted = 0;
+
+  // 1. Find every contract id so we can also purge its sub-partitions
+  const contracts = await dbListContracts(workspace).catch(() => []);
+
+  // 2. Walk the workspace partition itself and delete every SK
+  async function purgePartition(pk: string) {
+    let lastKey: Record<string, unknown> | undefined;
+    do {
+      const result = await dynamo.send(
+        new QueryCommand({
+          TableName: TABLE,
+          KeyConditionExpression: "PK = :pk",
+          ExpressionAttributeValues: { ":pk": pk },
+          ExclusiveStartKey: lastKey,
+          ProjectionExpression: "PK, SK",
+        })
+      );
+      const items = (result.Items ?? []) as Array<{ PK: string; SK: string }>;
+      for (const item of items) {
+        await dynamo.send(new DeleteCommand({ TableName: TABLE, Key: { PK: item.PK, SK: item.SK } }));
+        deleted++;
+      }
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+  }
+
+  await purgePartition(workspace);
+  for (const c of contracts) {
+    await purgePartition(clausePK(workspace, c.id));
+  }
+
+  return deleted;
 }
 
 // ── Project Consolidation ─────────────────────────────────────────────────────

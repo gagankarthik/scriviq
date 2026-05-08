@@ -1,23 +1,26 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Blue-IQ Govern — Know every clause. Miss nothing.",
+  title: "Scriviq — Enterprise contract intelligence",
   description:
-    "AI-powered contract intelligence for digital agencies. Extract, risk-score, and track every payment milestone, termination clause, and deadline buried in your SOWs.",
+    "Enterprise SOW intelligence for digital agencies. Extract every clause, version every amendment, log every action — audit-ready by design.",
 };
 
 export default function RootLayout({
@@ -26,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrains.variable} h-full antialiased dark`}
+      className={`${geist.variable} ${jetbrains.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
       <body className="min-h-full">

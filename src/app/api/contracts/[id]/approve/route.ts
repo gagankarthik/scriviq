@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { dbGetContract, dbUpdateContract, dbListApprovals, dbUpdateApproval, dbPutActivity } from "@/lib/aws/contracts";
+import { dbGetContract, dbUpdateContract, dbListApprovals, dbUpdateApproval } from "@/lib/aws/contracts";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,15 @@ export async function POST(
       approvalComments: body.comments,
     });
 
-    await dbPutActivity(session.workspace, {
-      id:          `activity-${Date.now()}`,
-      type:        "clause_actioned",
-      description: `${contract.title} ${body.decision} by ${session.userId}${body.comments ? ` — "${body.comments}"` : ""}`,
+    await logAudit({
+      type:        body.decision === "approved" ? "approval_approved" : "approval_rejected",
+      description: `${body.decision === "approved" ? "Approved" : "Rejected"} "${contract.title}"${body.comments ? ` — "${body.comments}"` : ""}`,
       contractId:  id,
-      timestamp:   new Date().toISOString(),
-    }).catch(() => {});
+      workspace:   session.workspace,
+      actorEmail:  session.email,
+      actorName:   session.name,
+      meta:        { stepId: body.stepId, comments: body.comments ?? "" },
+    });
 
     return Response.json({ approvalStatus: newApprovalStatus });
   } catch (err) {

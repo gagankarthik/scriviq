@@ -6,6 +6,10 @@ import {
   dbListAmendments, dbPutAmendment,
 } from "@/lib/aws/contracts";
 import { extractTextFromBuffer } from "@/lib/extractText";
+import {
+  detectAmendmentConflicts, nextAmendmentVersion, withDerivedVersions,
+} from "@/lib/utils";
+import { logAudit } from "@/lib/audit";
 import type { Amendment, ClauseChange, RiskLevel, ClauseChangeStatus } from "@/lib/mock-data";
 
 export const dynamic = "force-dynamic";
@@ -51,8 +55,10 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const amendments = await dbListAmendments(session.workspace, id).catch(() => []);
-  return Response.json({ amendments });
+  const raw = await dbListAmendments(session.workspace, id).catch(() => []);
+  const amendments = withDerivedVersions(raw);
+  const conflicts  = detectAmendmentConflicts(amendments);
+  return Response.json({ amendments, conflicts });
 }
 
 export async function POST(
@@ -97,11 +103,18 @@ export async function POST(
     if (!title) return Response.json({ error: "title is required" }, { status: 400 });
     if (!amendmentText) return Response.json({ error: "amendment text is required" }, { status: 400 });
 
-    const [contract, existingClauses] = await Promise.all([
+    const [contract, existingClauses, existingAmendments] = await Promise.all([
       dbGetContract(session.workspace, id),
       dbListClauses(session.workspace, id),
+      dbListAmendments(session.workspace, id),
     ]);
     if (!contract) return Response.json({ error: "Contract not found" }, { status: 404 });
+
+    const versionedExisting = withDerivedVersions(existingAmendments);
+    const newVersion        = nextAmendmentVersion(existingAmendments);
+    const parentVersion     = versionedExisting.length
+      ? Math.max(...versionedExisting.map((a) => a.version ?? 1))
+      : 1;
 
     // Include all fields that help GPT understand what has changed
     const clauseSummary = existingClauses.map((c) => ({
@@ -156,17 +169,40 @@ export async function POST(
     }));
 
     const amendment: Amendment = {
-      id:          `amendment-${Date.now()}`,
-      contractId:  id,
+      id:            `amendment-${Date.now()}`,
+      contractId:    id,
       title,
       description,
-      status:      "pending_review",
-      uploadedAt:  new Date().toISOString(),
+      status:        "pending_review",
+      uploadedAt:    new Date().toISOString(),
+      version:       newVersion,
+      parentVersion,
+      uploadedBy:    session.email ?? session.userId,
       changes,
     };
 
     await dbPutAmendment(session.workspace, amendment);
-    return Response.json({ amendment });
+
+    // Recompute conflicts including the new amendment
+    const allAfter   = withDerivedVersions([...existingAmendments, amendment]);
+    const conflicts  = detectAmendmentConflicts(allAfter);
+
+    await logAudit({
+      type:        "amendment_uploaded",
+      description: `Uploaded amendment v${newVersion}: ${title} (${changes.length} change${changes.length !== 1 ? "s" : ""})`,
+      contractId:  id,
+      workspace:   session.workspace,
+      actorEmail:  session.email,
+      actorName:   session.name,
+      meta:        {
+        amendmentId: amendment.id,
+        version:     newVersion,
+        changeCount: changes.length,
+        highRisk:    changes.filter((c) => c.riskLevel === "high").length,
+      },
+    });
+
+    return Response.json({ amendment, conflicts });
   } catch (err) {
     console.error("POST /api/contracts/[id]/amendments", err);
     return Response.json({ error: "Failed to process amendment" }, { status: 500 });

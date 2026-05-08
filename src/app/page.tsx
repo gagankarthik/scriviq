@@ -6,6 +6,7 @@ import {
   AlertTriangle, RefreshCw, Lock,
   FileSearch2, ShieldAlert, BellRing, LayoutDashboard,
   Users, History, Zap, TrendingUp, Star,
+  GitBranch, ScrollText, ShieldCheck, Layers, FileDiff,
 } from "lucide-react";
 
 const playfair = Playfair_Display({
@@ -40,7 +41,14 @@ const STATS = [
   { n: "500+",  label: "agencies protected" },
   { n: "$12M+", label: "revenue secured" },
   { n: "15s",   label: "extraction time" },
-  { n: "13",    label: "clause types" },
+  { n: "100%",  label: "audit-trail coverage" },
+];
+
+const COMPLIANCE_BADGES = [
+  { Icon: ScrollText,  label: "Audit Trail",     note: "Append-only · SOC 2 ready" },
+  { Icon: Lock,        label: "GDPR Compliant",  note: "Right to access &amp; erase" },
+  { Icon: ShieldCheck, label: "AES-256",         note: "Encrypted at rest in AWS"   },
+  { Icon: Layers,      label: "Versioned",       note: "Stacked amendment history"  },
 ];
 
 const PAIN_POINTS = [
@@ -59,7 +67,7 @@ const PAIN_POINTS = [
   {
     n: "03", Icon: Lock, accent: INK, accentBg: "rgba(19,18,16,0.03)",
     title: "IP you didn't mean to transfer",
-    body: "You built the design system. The contract says it's theirs. Blue-IQ Govern flags every IP clause before you sign.",
+    body: "You built the design system. The contract says it's theirs. Scriviq flags every IP clause before you sign.",
     stat: "100%", statLabel: "IP vested in client",
   },
 ];
@@ -98,9 +106,30 @@ const STEPS = [
 
 const FEATURES = [
   {
+    cols: 2 as const, Icon: GitBranch, color: "#0072E5",
+    eyebrow: "Multi-Amendment Tracking",
+    title: "Stacked amendments with conflict detection",
+    body: "Upload a revised SOW or change order — Scriviq diffs it against the latest version, stamps it as v2, v3, v4, and flags every conflict when two pending amendments touch the same clause. View the contract at any point in time.",
+    preview: ["v1.0 Original", "v2 — Scope Expansion", "v3 — Pricing Update", "⚠ Conflict on Clause 7"],
+  },
+  {
+    cols: 1 as const, Icon: ScrollText, color: "#8b5cf6",
+    eyebrow: "Audit Trail",
+    title: "SOC 2 / ISO ready",
+    body: "Append-only log of every upload, edit, amendment review, and approval — with actor, timestamp, and metadata. Defensible by design.",
+    preview: null,
+  },
+  {
+    cols: 1 as const, Icon: Lock, color: "#10b981",
+    eyebrow: "GDPR Compliant",
+    title: "Right to access &amp; erase",
+    body: "One-click full data export. One-click full data deletion. PII redaction toggle. Encrypted at rest, scoped to your workspace, never shared.",
+    preview: null,
+  },
+  {
     cols: 2 as const, Icon: FileSearch2, color: "#0072E5",
     eyebrow: "Clause Intelligence",
-    title: "13 clause types extracted automatically",
+    title: "13 clause types extracted in 15 seconds",
     body: "Payment milestones, auto-renewals, IP transfers, liability caps, termination notices, penalty clauses, force majeure — every clause that changes your exposure.",
     preview: ["payment_milestone","renewal_auto","ip_ownership","liability_cap","termination_notice","confidentiality","penalty_clause","acceptance_criteria","governing_law","dispute_resolution","force_majeure","scope_change","other"],
   },
@@ -133,10 +162,10 @@ const FEATURES = [
     preview: null,
   },
   {
-    cols: 1 as const, Icon: History, color: INK_2,
-    eyebrow: "Audit Trail",
-    title: "Original text preserved",
-    body: "Every extracted clause links back to verbatim source text. Always defensible.",
+    cols: 1 as const, Icon: FileDiff, color: INK_2,
+    eyebrow: "Verbatim Diffs",
+    title: "Word-level amendment diffs",
+    body: "Side-by-side word-level diff for every modified clause. Accept, reject, or undo per change. Original text always preserved.",
     preview: null,
   },
 ];
@@ -151,33 +180,34 @@ const EXTRACTION_CLAUSES = [
 const TESTIMONIALS = [
   {
     stars: 5,
-    quote: "Blue-IQ Govern caught an auto-renewal that would have locked us into another $85,000 year with a client we were actively off-boarding. It paid for itself in the first week.",
+    quote: "Scriviq caught an auto-renewal that would have locked us into another $85,000 year with a client we were actively off-boarding. It paid for itself in the first week.",
     name: "Sarah Kim", role: "Creative Director, Momentum Agency", initials: "SK",
   },
   {
     stars: 5,
-    quote: "We manage 40+ active contracts. Before Blue-IQ Govern, I had a spreadsheet I updated manually every week. Now it's just handled.",
+    quote: "We manage 40+ active contracts with constant amendments. Before Scriviq, I had a spreadsheet I updated manually every week. Now every revision is versioned and audit-logged.",
     name: "Marcus Tate", role: "Managing Partner, Brightfield Consulting", initials: "MT",
   },
   {
     stars: 5,
-    quote: "Three months in, Blue-IQ Govern flagged an IP clause that would have given a client full rights to a design system we built from scratch.",
+    quote: "Three months in, Scriviq flagged an IP clause in an amendment that would have given a client full rights to a design system we built from scratch.",
     name: "Elena Russo", role: "Head of Operations, PixelForge Studio", initials: "ER",
   },
 ];
 
 const PLAN_FEATURES = [
-  "Unlimited contract uploads",
+  "Unlimited contract &amp; amendment uploads",
   "AI clause extraction — 13 types",
+  "Stacked amendment versioning",
+  "Conflict detection across pending amendments",
   "Risk scoring + plain-English reasons",
+  "Append-only audit trail (SOC 2 ready)",
+  "GDPR data export &amp; right-to-erasure",
+  "PII redaction toggle",
   "Automated email deadline alerts",
-  "7-day, 1-day & overdue warnings",
   "Team workspace + role-based access",
-  "Portfolio dashboard & analytics",
-  "CSV & JSON clause export",
-  "PDF + DOCX + scanned image support",
-  "AWS-grade encryption at rest",
-  "Priority email support",
+  "Portfolio dashboard &amp; analytics",
+  "AES-256 encryption at rest",
   "14-day free trial — no credit card",
 ];
 
@@ -340,10 +370,10 @@ export default function HomePage() {
       <nav className="nav-glass sticky top-0 z-50" style={{ borderBottom: `1px solid ${BD}` }}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="blueiq-govern" width={127} height={27} />
+            <Image src="/logo.png" alt="Scriviq" width={127} height={27} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {[["Features","#features"],["How it works","#how-it-works"],["Pricing","#pricing"]].map(([l,h]) => (
+            {[["Features","#features"],["How it works","#how-it-works"],["Enterprise","#enterprise"],["Pricing","#pricing"]].map(([l,h]) => (
               <a key={l} href={h} style={{ color: INK_2, fontSize: 14, fontWeight: 500 }}
                 className="hover:opacity-60 transition-opacity">{l}</a>
             ))}
@@ -373,21 +403,21 @@ export default function HomePage() {
                 style={{ background: GOLD_BG, border: `1px solid rgba(176,115,36,0.22)` }}>
                 <Zap size={12} style={{ color: GOLD }} />
                 <span style={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: GOLD }}>
-                  AI Contract Intelligence
+                  Enterprise SOW Intelligence
                 </span>
               </div>
 
               <h1 className="font-bold mb-6"
                 style={{ fontSize: "clamp(48px,7.5vw,92px)", lineHeight: 0.92, letterSpacing: "-0.035em", color: INK }}>
-                Know every<br />
-                <span className="serif-i" style={{ fontWeight: 600, color: GOLD }}>clause.</span><br />
-                Miss nothing.
+                Every SOW.<br />
+                <span className="serif-i" style={{ fontWeight: 600, color: GOLD }}>Every amendment.</span><br />
+                Audit-ready.
               </h1>
 
-              <p style={{ color: INK_2, fontSize: "clamp(15px,1.7vw,18px)", lineHeight: 1.7, maxWidth: 480, marginBottom: 32 }}>
-                Blue-IQ Govern reads every SOW, retainer, and service agreement —
-                extracting payment deadlines, auto-renewals, IP clauses, and
-                10 more types. Automated alerts keep you covered before it costs you.
+              <p style={{ color: INK_2, fontSize: "clamp(15px,1.7vw,18px)", lineHeight: 1.7, maxWidth: 520, marginBottom: 32 }}>
+                Scriviq reads every SOW, change order, and amendment — extracts 13 clause
+                types, stacks every revision into a versioned history, flags conflicts when
+                two amendments touch the same clause, and logs every action for compliance.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 mb-7">
@@ -396,7 +426,7 @@ export default function HomePage() {
               </div>
 
               {/* Social proof strip */}
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-4 flex-wrap mb-7">
                 <div className="flex -space-x-2">
                   {["SK","MT","ER","JP","LC"].map((i) => (
                     <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border-2 shrink-0"
@@ -411,6 +441,23 @@ export default function HomePage() {
                     Trusted by <strong style={{ color: INK }}>500+ agencies</strong> · No credit card required
                   </p>
                 </div>
+              </div>
+
+              {/* Compliance trust strip */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {COMPLIANCE_BADGES.map(({ Icon, label, note }) => (
+                  <div
+                    key={label}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md"
+                    style={{ background: "rgba(19,18,16,0.04)", border: `1px solid ${BD}` }}
+                    title={note}
+                  >
+                    <Icon size={11} style={{ color: GOLD }} />
+                    <span style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: INK_2 }}>
+                      {label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -472,7 +519,7 @@ export default function HomePage() {
                     {/* Pro badge */}
                     <div style={{ margin: "12px 4px 0", padding: "6px 8px", borderRadius: 6, background: "rgba(0,114,229,0.08)", border: "1px solid rgba(0,114,229,0.15)" }}>
                       <p style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#0072E5", marginBottom: 1 }}>Workspace</p>
-                      <p style={{ fontSize: 9, color: INK_2, fontWeight: 600 }}>Blue-IQ Govern</p>
+                      <p style={{ fontSize: 9, color: INK_2, fontWeight: 600 }}>Scriviq</p>
                       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#75D8FC", background: "rgba(0,114,229,0.15)", padding: "1px 5px", borderRadius: 10, display: "inline-block", marginTop: 3 }}>Pro</span>
                     </div>
                   </div>
@@ -906,6 +953,91 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ══════════════════════════════════════ ENTERPRISE / COMPLIANCE ═══════ */}
+      <section id="enterprise" style={{ backgroundColor: BG_DARK, color: BG, paddingTop: 96, paddingBottom: 96 }}>
+        <div className="max-w-[1200px] mx-auto px-6">
+          <div style={{ maxWidth: 720, marginBottom: 48 }}>
+            <Eyebrow light>Enterprise &amp; Compliance</Eyebrow>
+            <h2 className="font-bold mb-4"
+              style={{ fontSize: "clamp(28px,4.5vw,48px)", lineHeight: 1.05, letterSpacing: "-0.025em", color: BG }}>
+              Built for legal-grade <span className="serif-i" style={{ color: GOLD, fontWeight: 600 }}>defensibility.</span>
+            </h2>
+            <p style={{ color: "rgba(248,246,241,0.7)", fontSize: 17, lineHeight: 1.65, maxWidth: 600 }}>
+              Every action is logged. Every amendment is versioned. Every byte is encrypted.
+              Scriviq is built for agencies that need to prove what was agreed, when, and by whom.
+            </p>
+          </div>
+
+          <div className="col2" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
+            {[
+              {
+                Icon: ScrollText,
+                title: "Append-only audit trail",
+                body: "Every upload, edit, amendment review, approval, and PII redaction is recorded with the actor email, timestamp, and structured metadata. SOC 2 ready.",
+                tags: ["SOC 2", "ISO 27001", "Immutable"],
+              },
+              {
+                Icon: Layers,
+                title: "Versioned amendment history",
+                body: "v1.0 Original → v2 → v3 → v4. View the contract at any point in time. Conflicts flagged when two pending amendments touch the same clause.",
+                tags: ["Versioned", "Conflict detection", "Stacked"],
+              },
+              {
+                Icon: Lock,
+                title: "GDPR — right to access &amp; erase",
+                body: "One-click full data export as JSON. One-click full workspace deletion with type-to-confirm. PII redaction toggle on every clause display.",
+                tags: ["Right to access", "Right to erasure", "PII masking"],
+              },
+              {
+                Icon: ShieldCheck,
+                title: "Encryption &amp; tenancy",
+                body: "AES-256 at rest in AWS DynamoDB &amp; S3. Cognito-issued workspace isolation — no cross-tenant data access. HttpOnly secure session cookies.",
+                tags: ["AES-256", "AWS SSE", "Workspace-scoped"],
+              },
+            ].map(({ Icon, title, body, tags }) => (
+              <div
+                key={title}
+                style={{
+                  background: "rgba(248,246,241,0.04)",
+                  border: "1px solid rgba(248,246,241,0.10)",
+                  borderRadius: 16,
+                  padding: "28px 32px",
+                }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: "rgba(176,115,36,0.16)", border: "1px solid rgba(176,115,36,0.3)" }}>
+                    <Icon size={17} style={{ color: GOLD }} />
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 600, color: BG, letterSpacing: "-0.01em" }}
+                    dangerouslySetInnerHTML={{ __html: title }} />
+                </div>
+                <p style={{ color: "rgba(248,246,241,0.65)", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}
+                  dangerouslySetInnerHTML={{ __html: body }} />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {tags.map((tag) => (
+                    <span key={tag} style={{
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                      fontWeight: 700,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "rgba(248,246,241,0.6)",
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      background: "rgba(248,246,241,0.05)",
+                      border: "1px solid rgba(248,246,241,0.1)",
+                    }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ══════════════════════════════════════ PRICING ═══════════════════════ */}
       <section id="pricing" style={{ backgroundColor: "#fff", paddingTop: 96, paddingBottom: 96 }}>
         <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 24px", textAlign: "center" }}>
@@ -1034,7 +1166,7 @@ export default function HomePage() {
                 <a key={l} href="#" style={{ fontSize: 13, color: INK_3 }} className="hover:opacity-60 transition-opacity">{l}</a>
               ))}
             </div>
-            <p style={{ fontSize: 12, color: INK_3 }}>© {new Date().getFullYear()} Blue-IQ Govern</p>
+            <p style={{ fontSize: 12, color: INK_3 }}>© {new Date().getFullYear()} Scriviq</p>
           </div>
         </div>
       </footer>

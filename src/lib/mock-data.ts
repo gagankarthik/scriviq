@@ -160,17 +160,42 @@ export interface TeamMember {
   lastActiveAt: string;
 }
 
+export type ActivityEventType =
+  | "contract_uploaded"
+  | "contract_edited"
+  | "contract_deleted"
+  | "extraction_complete"
+  | "alert_sent"
+  | "clause_actioned"
+  | "member_added"
+  | "amendment_uploaded"
+  | "amendment_resolved"
+  | "amendment_overridden"
+  | "approval_submitted"
+  | "approval_approved"
+  | "approval_rejected"
+  | "pii_redacted"
+  | "data_exported"
+  | "workspace_data_deleted";
+
 export interface ActivityEvent {
-  id: string;
-  type: "contract_uploaded" | "extraction_complete" | "alert_sent" | "clause_actioned" | "member_added";
-  description: string;
-  contractId?: string;
-  timestamp: string;
+  id:           string;
+  type:         ActivityEventType;
+  description:  string;
+  contractId?:  string;
+  timestamp:    string;
+  /** UID/email of who performed the action — populated for audit. */
+  actorEmail?:  string;
+  actorName?:   string;
+  /** Optional structured payload for the audit log (kept small). */
+  meta?:        Record<string, string | number | boolean | null>;
 }
 
-export type AmendmentStatus    = "pending_review" | "resolved";
-export type ClauseChangeType   = "added" | "modified" | "removed";
-export type ClauseChangeStatus = "pending" | "accepted" | "rejected";
+export type AmendmentStatus       = "pending_review" | "resolved" | "superseded";
+export type ClauseChangeType      = "added" | "modified" | "removed";
+export type ClauseChangeStatus    = "pending" | "accepted" | "rejected";
+export type AmendmentConflictKind = "same_clause" | "supersedes_pending" | "modifies_removed";
+export type AmendmentConflictSeverity = "warning" | "error";
 
 export interface ClauseChange {
   id:           string;
@@ -185,13 +210,39 @@ export interface ClauseChange {
 }
 
 export interface Amendment {
-  id:          string;
-  contractId:  string;
-  title:       string;
-  description: string;
-  status:      AmendmentStatus;
-  uploadedAt:  string;
-  changes:     ClauseChange[];
+  id:             string;
+  contractId:     string;
+  title:          string;
+  description:    string;
+  status:         AmendmentStatus;
+  uploadedAt:     string;
+  changes:        ClauseChange[];
+  /** Sequential version number — Original SOW is v1, first amendment is v2, etc. */
+  version?:       number;
+  /** The version this amendment was based on when uploaded — used for stacking. */
+  parentVersion?: number;
+  /** Stated effective date (separate from upload date). */
+  effectiveDate?: string;
+  /** Set when accepted changes were applied to live clauses. */
+  appliedAt?:     string;
+  /** UID/email of who uploaded — populated for audit trail. */
+  uploadedBy?:    string;
+  /** UID/email of who resolved — populated for audit trail. */
+  resolvedBy?:    string;
+}
+
+export interface AmendmentConflict {
+  id:           string;
+  kind:         AmendmentConflictKind;
+  severity:     AmendmentConflictSeverity;
+  /** The clauseId being touched by multiple amendments (null for added-clause collisions). */
+  clauseId:     string | null;
+  clauseTitle:  string;
+  /** All pending amendments involved in this conflict, ordered by upload date. */
+  amendmentIds: string[];
+  /** The specific change ids per amendment. */
+  changeIds:    string[];
+  description:  string;
 }
 
 // ── SOW Analysis ──────────────────────────────────────────────────────────────

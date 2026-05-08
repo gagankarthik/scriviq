@@ -3,11 +3,18 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft, Download, Loader2, AlertCircle, CheckCircle2,
   Calendar, DollarSign, Shield, TrendingUp, FileWarning,
-  Activity, GitBranch, CheckSquare, BarChart3,
+  GitBranch, BarChart3, ShieldAlert, ScrollText, ShieldCheck, Lock,
 } from "lucide-react";
-import { dbGetContract, dbListClauses, dbListAlerts, dbListAmendments, dbListApprovals, dbGetSowAnalysis, dbListContracts, dbGetProject } from "@/lib/aws/contracts";
+import {
+  dbGetContract, dbListClauses, dbListAlerts, dbListAmendments,
+  dbListApprovals, dbGetSowAnalysis, dbListContracts, dbGetProject,
+  dbListContractActivity,
+} from "@/lib/aws/contracts";
 import { getSession } from "@/lib/auth/session";
-import { formatCurrency, daysUntil, computeRiskScore } from "@/lib/utils";
+import {
+  formatCurrency, daysUntil, computeRiskScore,
+  withDerivedVersions, detectAmendmentConflicts,
+} from "@/lib/utils";
 import { RiskBadge, RiskBadgeLarge } from "@/components/domain/RiskBadge";
 import { RiskGauge } from "@/components/domain/RiskGauge";
 import { ClauseList } from "@/components/domain/ClauseList";
@@ -19,6 +26,7 @@ import { ContractEditModal } from "@/components/domain/ContractEditModal";
 import { SowTypeBadge } from "@/components/domain/SowTypeBadge";
 import { ApprovalBanner } from "@/components/domain/ApprovalBanner";
 import { BudgetTracker } from "@/components/domain/BudgetTracker";
+import { AuditTrailPanel } from "@/components/domain/AuditTrailPanel";
 import type { Clause } from "@/lib/mock-data";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -41,6 +49,77 @@ function StatusBadge({ status }: { status: "processing" | "ready" | "error" }) {
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30">
       <AlertCircle size={11} />Error
     </span>
+  );
+}
+
+// ── Section nav (sticky) ──────────────────────────────────────────────────────
+
+function SectionNav({
+  hasAmendments, conflictCount, hasSowAnalysis, auditCount,
+}: {
+  hasAmendments: boolean;
+  conflictCount: number;
+  hasSowAnalysis: boolean;
+  auditCount: number;
+}) {
+  const items = [
+    { href: "#overview",   label: "Overview",   badge: null },
+    { href: "#clauses",    label: "Clauses",    badge: null },
+    { href: "#amendments", label: "Amendments", badge: hasAmendments ? (conflictCount > 0 ? `${conflictCount} conflict${conflictCount !== 1 ? "s" : ""}` : null) : null,
+      badgeColor: "#ef4444" },
+    { href: "#sow-intel",  label: "SOW Intelligence", badge: hasSowAnalysis ? null : "AI" },
+    { href: "#audit",      label: "Audit Log",  badge: auditCount > 0 ? String(auditCount) : null, badgeColor: "#0072E5" },
+  ];
+
+  return (
+    <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-[var(--surface-base)]/95 backdrop-blur-md border-b border-[var(--border-subtle)]">
+      <nav className="flex items-center gap-1 overflow-x-auto">
+        {items.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-secondary)] hover:text-[#0072E5] dark:hover:text-[#75D8FC] hover:bg-[var(--surface-subtle)] transition-all whitespace-nowrap"
+          >
+            {item.label}
+            {item.badge && (
+              <span
+                className="inline-flex items-center text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
+                style={{
+                  color: item.badgeColor ?? "#0072E5",
+                  backgroundColor: `${item.badgeColor ?? "#0072E5"}14`,
+                  borderColor: `${item.badgeColor ?? "#0072E5"}40`,
+                }}
+              >
+                {item.badge}
+              </span>
+            )}
+          </a>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+// ── Compliance badges row ─────────────────────────────────────────────────────
+
+function ComplianceBadges() {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {[
+        { label: "Audit Trail",      Icon: ScrollText,  color: "#0072E5", note: "All actions logged" },
+        { label: "Encrypted at Rest",Icon: Lock,        color: "#10b981", note: "AWS SSE" },
+        { label: "GDPR Compliant",   Icon: ShieldCheck, color: "#8b5cf6", note: "Right to access &amp; erase" },
+      ].map(({ label, Icon, color, note }) => (
+        <span
+          key={label}
+          title={note}
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-widest border"
+          style={{ color, backgroundColor: `${color}10`, borderColor: `${color}30` }}
+        >
+          <Icon size={10} />{label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -77,7 +156,6 @@ function PaymentMilestones({ clauses }: { clauses: Clause[] }) {
         )}
       </div>
 
-      {/* Cash flow bar */}
       {totalAmount > 0 && (
         <div className="mb-4 space-y-1.5">
           <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
@@ -98,10 +176,9 @@ function PaymentMilestones({ clauses }: { clauses: Clause[] }) {
         </div>
       )}
 
-      {/* Timeline list */}
       <div className="relative pl-5 space-y-4">
         <div className="absolute left-1.5 top-2 bottom-2 w-px bg-[var(--border-subtle)]" />
-        {milestones.map((m, i) => {
+        {milestones.map((m) => {
           const d     = m.dueDate ? daysUntil(m.dueDate) : null;
           const color = d !== null && d < 0 ? "#ef4444" : d !== null && d <= 7 ? "#f59e0b" : "#0072E5";
           const pct   = totalAmount > 0 ? Math.round(((m.amount ?? 0) / totalAmount) * 100) : null;
@@ -198,17 +275,19 @@ export default async function ContractDetailPage({
   const dbContract = await dbGetContract(workspace, id).catch(() => null);
   if (!dbContract) notFound();
 
-  const [clauses, allAlerts, amendments, approvalSteps, sowAnalysis] = await Promise.all([
+  const [clauses, allAlerts, rawAmendments, approvalSteps, sowAnalysis, auditEvents] = await Promise.all([
     dbListClauses(workspace, id).catch(() => []),
     dbListAlerts(workspace).catch(() => []),
     dbListAmendments(workspace, id).catch(() => []),
     dbListApprovals(workspace, id).catch(() => []),
     dbGetSowAnalysis(workspace, id).catch(() => null),
+    dbListContractActivity(workspace, id, 100).catch(() => []),
   ]);
+  const amendments     = withDerivedVersions(rawAmendments);
+  const conflicts      = detectAmendmentConflicts(amendments);
   const contract       = dbContract;
   const contractAlerts = allAlerts.filter((a) => a.contractId === id && a.status !== "dismissed");
 
-  // Fetch project siblings for the sidebar (only when contract belongs to a project)
   let projectContracts: Awaited<ReturnType<typeof dbListContracts>> = [];
   let project: Awaited<ReturnType<typeof dbGetProject>> = null;
   if (contract.projectId) {
@@ -229,6 +308,7 @@ export default async function ContractDetailPage({
     .reduce((s, c) => s + (c.amount ?? 0), 0);
 
   const hasSidebar = !!contract.projectId && projectContracts.length > 0;
+  const pendingAmendments = amendments.filter((a) => a.status === "pending_review").length;
 
   return (
     <div className="-mx-4 sm:-mx-6 -mt-4 sm:-mt-6 flex gap-0">
@@ -263,7 +343,7 @@ export default async function ContractDetailPage({
       </div>
 
       {/* Header card */}
-      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-6">
+      <div id="overview" className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-[var(--fg-muted)] mb-1">{contract.clientName}</p>
@@ -278,6 +358,19 @@ export default async function ContractDetailPage({
                 {contract.fileType}
               </span>
               <span className="text-xs font-mono text-[var(--fg-muted)]">{contract.pageCount} pages</span>
+              {amendments.length > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border"
+                  style={{ color: "#0072E5", backgroundColor: "rgba(0,114,229,0.08)", borderColor: "rgba(0,114,229,0.25)" }}
+                  title="Latest amendment version"
+                >
+                  <GitBranch size={10} />v{Math.max(1, ...amendments.map((a) => a.version ?? 1))}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <ComplianceBadges />
             </div>
 
             {contract.aiSummary && (
@@ -288,7 +381,6 @@ export default async function ContractDetailPage({
             )}
           </div>
 
-          {/* Risk gauge */}
           {clauses.length > 0 && (
             <div className="shrink-0 flex flex-col items-center gap-1">
               <RiskGauge score={riskScore} />
@@ -330,7 +422,15 @@ export default async function ContractDetailPage({
         </div>
       </div>
 
-      {/* Stats row — primary */}
+      {/* Sticky section nav */}
+      <SectionNav
+        hasAmendments={amendments.length > 0}
+        conflictCount={conflicts.length}
+        hasSowAnalysis={!!sowAnalysis}
+        auditCount={auditEvents.length}
+      />
+
+      {/* Stats — primary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
@@ -346,6 +446,7 @@ export default async function ContractDetailPage({
             leftColor: "var(--border-color)",
             textColor: "text-[var(--fg-primary)]",
             Icon: Shield,
+            sub: `${activeClauses.length} active`,
           },
           {
             label: "High-Risk",
@@ -353,15 +454,25 @@ export default async function ContractDetailPage({
             leftColor: highRisk.length > 0 ? "#ef4444" : "var(--border-color)",
             textColor: highRisk.length > 0 ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]",
             Icon: AlertCircle,
+            sub: mediumRisk.length > 0 ? `+ ${mediumRisk.length} medium` : undefined,
           },
           {
-            label: days !== null ? (days < 0 ? "Expired" : "Expires in") : "Expiry",
-            value: days !== null ? (days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? "Today" : `${days}d`) : "—",
-            leftColor: (days !== null && days <= 7) ? "#f59e0b" : (days !== null && days < 0) ? "#ef4444" : "var(--border-color)",
-            textColor: (days !== null && days <= 7) ? "text-amber-600 dark:text-amber-400" : (days !== null && days < 0) ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]",
-            Icon: Calendar,
+            label: "Amendments",
+            value: String(amendments.length),
+            leftColor: conflicts.length > 0
+              ? "#ef4444"
+              : pendingAmendments > 0 ? "#f59e0b" : "var(--border-color)",
+            textColor: conflicts.length > 0
+              ? "text-red-600 dark:text-red-400"
+              : pendingAmendments > 0 ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]",
+            Icon: GitBranch,
+            sub: conflicts.length > 0
+              ? `${conflicts.length} conflict${conflicts.length !== 1 ? "s" : ""}`
+              : pendingAmendments > 0
+                ? `${pendingAmendments} pending`
+                : amendments.length > 0 ? "all resolved" : "—",
           },
-        ].map(({ label, value, leftColor, textColor, Icon }) => (
+        ].map(({ label, value, leftColor, textColor, Icon, sub }) => (
           <div
             key={label}
             className="rounded-xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-4 border-l-2"
@@ -372,38 +483,21 @@ export default async function ContractDetailPage({
               <p className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] font-semibold">{label}</p>
             </div>
             <p className={`text-lg sm:text-2xl font-bold font-mono ${textColor}`}>{value}</p>
+            {sub && <p className="text-[10px] text-[var(--fg-muted)] mt-1">{sub}</p>}
           </div>
         ))}
       </div>
 
-      {/* Stats row — secondary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats — secondary */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           {
-            label: "Medium-Risk",
-            value: String(mediumRisk.length),
-            leftColor: mediumRisk.length > 0 ? "#f59e0b" : "var(--border-color)",
-            textColor: mediumRisk.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]",
-            Icon: Activity,
-            sub: "clauses",
-          },
-          {
-            label: "Active Clauses",
-            value: String(activeClauses.length),
-            leftColor: "#10b981",
-            textColor: "text-emerald-600 dark:text-emerald-400",
-            Icon: CheckSquare,
-            sub: `of ${clauses.length} total`,
-          },
-          {
-            label: "Amendments",
-            value: String(amendments.length),
-            leftColor: amendments.some((a) => a.status === "pending_review") ? "#f59e0b" : "var(--border-color)",
-            textColor: amendments.some((a) => a.status === "pending_review") ? "text-amber-600 dark:text-amber-400" : "text-[var(--fg-primary)]",
-            Icon: GitBranch,
-            sub: amendments.some((a) => a.status === "pending_review")
-              ? `${amendments.filter((a) => a.status === "pending_review").length} pending`
-              : "all resolved",
+            label: days !== null ? (days < 0 ? "Expired" : "Expires in") : "Expiry",
+            value: days !== null ? (days < 0 ? `${Math.abs(days)}d ago` : days === 0 ? "Today" : `${days}d`) : "—",
+            leftColor: (days !== null && days <= 7) ? "#f59e0b" : (days !== null && days < 0) ? "#ef4444" : "var(--border-color)",
+            textColor: (days !== null && days <= 7) ? "text-amber-600 dark:text-amber-400" : (days !== null && days < 0) ? "text-red-600 dark:text-red-400" : "text-[var(--fg-primary)]",
+            Icon: Calendar,
+            sub: contract.expiryDate ? new Date(contract.expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined,
           },
           {
             label: "Milestone Total",
@@ -411,7 +505,15 @@ export default async function ContractDetailPage({
             leftColor: milestoneTotal > 0 ? "#0072E5" : "var(--border-color)",
             textColor: milestoneTotal > 0 ? "text-[#0072E5] dark:text-[#75D8FC]" : "text-[var(--fg-primary)]",
             Icon: TrendingUp,
-            sub: "payment milestones",
+            sub: "across milestones",
+          },
+          {
+            label: "Audit Events",
+            value: String(auditEvents.length),
+            leftColor: "#8b5cf6",
+            textColor: "text-[#8b5cf6]",
+            Icon: ScrollText,
+            sub: auditEvents.length > 0 ? `last ${auditEvents.length} actions` : "no events yet",
           },
         ].map(({ label, value, leftColor, textColor, Icon, sub }) => (
           <div
@@ -440,13 +542,34 @@ export default async function ContractDetailPage({
         />
       )}
 
+      {/* Amendment conflict alert — highest priority */}
+      {conflicts.length > 0 && (
+        <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/15">
+          <ShieldAlert size={15} className="text-red-600 dark:text-red-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+              {conflicts.length} amendment conflict{conflicts.length !== 1 ? "s" : ""} detected
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-400">
+              Multiple pending amendments touch the same clauses. Resolve before applying.
+            </p>
+          </div>
+          <a
+            href="#amendments"
+            className="shrink-0 text-xs font-semibold text-red-700 dark:text-red-300 hover:underline"
+          >
+            Review conflicts →
+          </a>
+        </div>
+      )}
+
       {/* Pending amendment alert */}
-      {amendments.some((a) => a.status === "pending_review") && (
+      {pendingAmendments > 0 && conflicts.length === 0 && (
         <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-950/15">
           <AlertCircle size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              {amendments.filter((a) => a.status === "pending_review").length} amendment{amendments.filter((a) => a.status === "pending_review").length !== 1 ? "s" : ""} pending review
+              {pendingAmendments} amendment{pendingAmendments !== 1 ? "s" : ""} pending review
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400">
               Review clause-by-clause changes before applying to this contract.
@@ -466,9 +589,8 @@ export default async function ContractDetailPage({
         <PaymentMilestones clauses={clauses} />
       )}
 
-      {/* Content + sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Clauses */}
+      {/* Clauses + Sidebar */}
+      <div id="clauses" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           {contract.status === "ready" && clauses.length > 0 ? (
             <ClauseList clauses={clauses} />
@@ -490,9 +612,7 @@ export default async function ContractDetailPage({
           ) : null}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
-          {/* Budget tracker (LOE contracts) */}
           {(contract.budgetHours || contract.sowType === "loe") && (
             <BudgetTracker
               contractId={id}
@@ -501,10 +621,8 @@ export default async function ContractDetailPage({
             />
           )}
 
-          {/* Termination summary */}
           {contract.status === "ready" && <TerminationSummary clauses={clauses} />}
 
-          {/* Deadlines */}
           {withDates.length > 0 && (
             <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -532,7 +650,6 @@ export default async function ContractDetailPage({
             </div>
           )}
 
-          {/* Active alerts */}
           {contractAlerts.length > 0 && (
             <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-950/10 p-5">
               <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-3">
@@ -551,7 +668,6 @@ export default async function ContractDetailPage({
             </div>
           )}
 
-          {/* Risk breakdown */}
           <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--surface-elevated)] p-5">
             <div className="flex items-center gap-2 mb-3">
               <Shield size={13} className="text-[var(--fg-muted)]" />
@@ -583,11 +699,18 @@ export default async function ContractDetailPage({
         </div>
       </div>
 
-      {/* SOW Intelligence */}
-      <SowAnalysisPanel contractId={id} initialAnalysis={sowAnalysis} />
+      {/* Amendments — first-class section */}
+      <AmendmentPanel contractId={id} initialAmendments={amendments} initialConflicts={conflicts} />
 
-      {/* Amendments */}
-      <AmendmentPanel contractId={id} initialAmendments={amendments} />
+      {/* SOW Intelligence */}
+      <div id="sow-intel">
+        <SowAnalysisPanel contractId={id} initialAnalysis={sowAnalysis} />
+      </div>
+
+      {/* Audit Trail */}
+      <div id="audit">
+        <AuditTrailPanel events={auditEvents} contractId={id} />
+      </div>
       </div>
       </div>
     </div>

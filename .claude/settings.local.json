@@ -33,7 +33,8 @@
       "Bash(mkdir -p \"C:/Users/gagan/Desktop/Projects/scriviq/src/app/\\(app\\)/contracts/[id]/report\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\),**d.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k,v in sorted\\(deps.items\\(\\)\\)]\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\gagan\\\\Desktop\\\\Projects\\\\scriviq\" -Recurse -Force)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(echo \"EXIT=$?\")"
     ]
   },
   "enabledPlugins": {
